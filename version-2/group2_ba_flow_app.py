@@ -258,24 +258,20 @@ st.markdown(
     section[data-testid="stSidebar"] {
         width: 480px !important;
         min-width: 480px !important;
-        background: #2c1f0e !important;
-        border-right: none;
-    }
-
-    section[data-testid="stSidebar"] * {
-        color: #e8d9c0 !important;
+        background: #fdf9f3 !important;
+        border-right: 1px solid #e0d4c0;
     }
 
     section[data-testid="stSidebar"] img {
         max-height: 480px;
         object-fit: contain;
         border-radius: 8px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        box-shadow: 0 2px 12px rgba(140,100,40,0.15);
     }
 
     section[data-testid="stSidebar"] h3 {
-        color: #d4b896 !important;
-        border-bottom: 1px solid #4a3520 !important;
+        color: #4a3520 !important;
+        border-bottom: 1px solid #e0d4c0 !important;
         padding-bottom: 6px;
         text-transform: none !important;
     }
@@ -390,7 +386,8 @@ def init_state():
         "image_index": 0,
         "task_start_time": None,
         "pending_stage_records": [],
-        "failed_cloud_records": [],
+        "pending_cloud_rows": [],
+        "cloud_sync_attempted": False,
         "last_save_message": "",
     }
     for key, value in defaults.items():
@@ -420,7 +417,8 @@ def reset_all():
     st.session_state.image_index = 0
     st.session_state.task_start_time = None
     st.session_state.pending_stage_records = []
-    st.session_state.failed_cloud_records = []
+    st.session_state.pending_cloud_rows = []
+    st.session_state.cloud_sync_attempted = False
     st.session_state.last_save_message = ""
 
 
@@ -441,6 +439,7 @@ def append_records_to_google_sheet(records):
 
 
 def save_records(records):
+    """只把資料寫入本機 CSV，不做雲端同步（雲端同步統一在完成頁面處理）。"""
     rows = [{col: record.get(col, "") for col in DATA_COLUMNS} for record in records]
     df_new = pd.DataFrame(rows, columns=DATA_COLUMNS)
 
@@ -457,23 +456,20 @@ def save_records(records):
     df_all = df_all[DATA_COLUMNS]
     df_all.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
 
-    try:
-        ok, msg = append_records_to_google_sheet(rows)
-        st.session_state["last_save_message"] = msg
-    except Exception as e:
-        st.session_state["failed_cloud_records"].extend(rows)
-        st.session_state["last_save_message"] = f"CSV 已儲存，但 Google Sheet 同步失敗：{e}"
+    # 把這批 rows 加入「待上傳」清單，等全部完成後統一送雲端
+    st.session_state.setdefault("pending_cloud_rows", []).extend(rows)
 
 
-def retry_failed_cloud_sync():
-    records = st.session_state.get("failed_cloud_records", [])
-    if not records:
-        return False, "目前沒有需要重新同步的資料。"
+def sync_to_cloud():
+    """把 pending_cloud_rows 全部送到 Google Sheet。成功後清空 pending，失敗保留以便重試。"""
+    rows = st.session_state.get("pending_cloud_rows", [])
+    if not rows:
+        return True, "沒有需要同步的資料。"
 
-    ok, msg = append_records_to_google_sheet(records)
+    ok, msg = append_records_to_google_sheet(rows)
     if ok:
-        st.session_state["failed_cloud_records"] = []
-        st.session_state["last_save_message"] = msg
+        st.session_state["pending_cloud_rows"] = []
+    st.session_state["last_save_message"] = msg
     return ok, msg
 
 
@@ -839,22 +835,32 @@ def render_task():
 def render_done():
     st.success("此組兩個階段皆已完成。")
 
-    if st.session_state.get("last_save_message"):
-        st.info(st.session_state["last_save_message"])
+    # 進入 done 頁面時自動嘗試一次雲端同步（只跑一次）
+    if not st.session_state.get("cloud_sync_attempted", False):
+        st.session_state["cloud_sync_attempted"] = True
+        try:
+            ok, msg = sync_to_cloud()
+            st.session_state["last_save_message"] = msg
+        except Exception as e:
+            st.session_state["last_save_message"] = f"CSV 已儲存，但 Google Sheet 同步失敗：{e}"
 
-    failed_count = len(st.session_state.get("failed_cloud_records", []))
-    if failed_count > 0:
-        st.warning(f"目前有 {failed_count} 筆資料尚未成功同步到 Google Sheet。")
-        if st.button("再次同步到 Google Sheet", type="primary"):
+    msg = st.session_state.get("last_save_message", "")
+    pending_count = len(st.session_state.get("pending_cloud_rows", []))
+
+    if pending_count == 0:
+        if msg:
+            st.success(f"☁️ {msg}")
+    else:
+        st.warning(f"Google Sheet 同步失敗，尚有 {pending_count} 筆資料未上傳。")
+        if msg:
+            st.error(msg)
+        if st.button("🔄 重新上傳到 Google Sheet", type="primary"):
             try:
-                ok, msg = retry_failed_cloud_sync()
-                if ok:
-                    st.session_state["last_save_message"] = msg
-                    st.rerun()
-                else:
-                    st.info(msg)
+                ok, msg2 = sync_to_cloud()
+                st.session_state["last_save_message"] = msg2
+                st.rerun()
             except Exception as e:
-                st.error(f"Google Sheet 重新同步失敗：{e}")
+                st.error(f"重新同步失敗：{e}")
 
     st.markdown(f"輸出檔案：`{OUTPUT_CSV.name}`")
     if OUTPUT_CSV.exists():
