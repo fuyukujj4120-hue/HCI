@@ -836,6 +836,7 @@ def render_done():
     st.success("此組兩個階段皆已完成。")
 
     # 進入 done 頁面時自動嘗試一次雲端同步（只跑一次）
+    # 若第一次失敗，會先顯示失敗訊息，並保留資料給下方「上傳雲端」按鈕重試。
     if not st.session_state.get("cloud_sync_attempted", False):
         st.session_state["cloud_sync_attempted"] = True
         try:
@@ -847,20 +848,27 @@ def render_done():
     msg = st.session_state.get("last_save_message", "")
     pending_count = len(st.session_state.get("pending_cloud_rows", []))
 
+    st.markdown("### 雲端同步狀態")
     if pending_count == 0:
         if msg:
             st.success(f"☁️ {msg}")
+        else:
+            st.success("☁️ Google Sheet 已同步完成。")
     else:
-        st.warning(f"Google Sheet 同步失敗，尚有 {pending_count} 筆資料未上傳。")
+        st.warning(f"第一次 Google Sheet 同步未成功，尚有 {pending_count} 筆資料未上傳。")
         if msg:
             st.error(msg)
-        if st.button("🔄 重新上傳到 Google Sheet", type="primary"):
-            try:
-                ok, msg2 = sync_to_cloud()
-                st.session_state["last_save_message"] = msg2
-                st.rerun()
-            except Exception as e:
-                st.error(f"重新同步失敗：{e}")
+
+    # 最後固定提供一個「上傳雲端」按鈕。
+    # 成功後 pending_cloud_rows 會清空，失敗訊息會在 rerun 後消失並改成成功訊息。
+    if st.button("☁️ 上傳雲端", type="primary", disabled=(pending_count == 0)):
+        try:
+            ok, msg2 = sync_to_cloud()
+            st.session_state["last_save_message"] = msg2
+            st.rerun()
+        except Exception as e:
+            st.session_state["last_save_message"] = f"Google Sheet 重新同步失敗：{e}"
+            st.rerun()
 
     st.markdown(f"輸出檔案：`{OUTPUT_CSV.name}`")
     if OUTPUT_CSV.exists():
@@ -890,4 +898,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
