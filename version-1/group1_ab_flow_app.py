@@ -1,13 +1,21 @@
+
 import json
 import time
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import requests
 import streamlit as st
 
 APP_PAGE_TITLE = "家貓情緒標註系統｜第 1 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group1.csv")
+GROUP_ID = "1"
+
+# Google Sheet 自動儲存設定：請貼上 Apps Script Web App 的 /exec URL。
+# 若先保持空白，程式仍會正常儲存本機 CSV，不會送到 Google Sheet。
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwuq0gOYl6fCuiR6Y_Pfr4_eMiTPbRFzUGdeQCVp6UNYcxAXNd6RN6xx1eg_3KDhBifwg/exec"
+SHEET_SECRET = "hci_cat_annotation_secret"
 # ============================================================
 # 照片資料尚未決定：先放空白 placeholder，讓你可以先看完整流程。
 # 之後把 path 改成實際圖片路徑即可，例如："images/cat_001.jpg"
@@ -46,6 +54,9 @@ STAGE_PLAN = [
 st.set_page_config(page_title=APP_PAGE_TITLE, layout="wide")
 
 DATA_COLUMNS = [
+    "group_id",
+    "stage_name",
+    "photo_set_name",
     "participant_id",
     "flow_type",
     "image_id",
@@ -226,17 +237,45 @@ def reset_all():
     st.session_state.pending_stage_records = []
 
 
+def append_records_to_google_sheet(records):
+    """把資料同步寫入 Google Sheet。SHEET_WEBHOOK_URL 空白時會自動略過。"""
+    if not SHEET_WEBHOOK_URL.strip():
+        return False, "尚未設定 SHEET_WEBHOOK_URL，因此只儲存本機 CSV。"
+
+    payload = {
+        "secret": SHEET_SECRET,
+        "records": records,
+    }
+    resp = requests.post(SHEET_WEBHOOK_URL, json=payload, timeout=20)
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get("ok"):
+        raise ValueError(data.get("error", "Unknown Google Sheet error"))
+    return True, f"已同步 {data.get('inserted', len(records))} 筆到 Google Sheet。"
+
+
 def save_records(records):
+    """保留原本 CSV 儲存，同時嘗試同步 Google Sheet。Google Sheet 失敗不會刪掉 CSV。"""
     rows = [{col: record.get(col, "") for col in DATA_COLUMNS} for record in records]
     df_new = pd.DataFrame(rows, columns=DATA_COLUMNS)
     if OUTPUT_CSV.exists():
         df_old = pd.read_csv(OUTPUT_CSV, encoding="utf-8-sig")
+        # 若舊 CSV 沒有新欄位，補空值，避免 concat 後欄位不一致。
+        for col in DATA_COLUMNS:
+            if col not in df_old.columns:
+                df_old[col] = ""
+        df_old = df_old[DATA_COLUMNS]
         df_all = pd.concat([df_old, df_new], ignore_index=True)
     else:
         df_all = df_new
     df_all = df_all[DATA_COLUMNS]
     df_all.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
 
+    try:
+        ok, msg = append_records_to_google_sheet(rows)
+        st.session_state["last_save_message"] = msg
+    except Exception as e:
+        st.session_state["last_save_message"] = f"CSV 已儲存，但 Google Sheet 同步失敗：{e}"
 
 def render_placeholder(image_id):
     st.markdown(
@@ -320,6 +359,9 @@ def build_base_record(stage, image, initial_emotion, selected_features, final_em
         emotion_changed = ""
 
     return {
+        "group_id": GROUP_ID,
+        "stage_name": stage["stage_name"],
+        "photo_set_name": stage["photo_set_name"],
         "participant_id": st.session_state.participant_id,
         "flow_type": stage["flow_type"],
         "image_id": image["image_id"],
@@ -537,6 +579,7 @@ def render_intro():
         )
 
     st.markdown("### 儲存欄位")
+    st.info(f"本網頁會自動寫入 group_id = {GROUP_ID}，用來區分第 1 組或第 2 組。")
     st.code(", ".join(DATA_COLUMNS), language="text")
     st.markdown('<div class="warn-box">目前照片先使用空白 placeholder，所以可以直接進入流程預覽。之後只要修改 IMAGE_SET_1 / IMAGE_SET_2 的 path 即可。</div>', unsafe_allow_html=True)
 
@@ -578,6 +621,8 @@ def render_task():
 
 def render_done():
     st.success("此組兩個階段皆已完成。")
+    if st.session_state.get("last_save_message"):
+        st.info(st.session_state["last_save_message"])
     st.markdown(f"輸出檔案：`{OUTPUT_CSV.name}`")
     if OUTPUT_CSV.exists():
         st.download_button(
@@ -605,3 +650,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
