@@ -1,4 +1,3 @@
-
 import json
 import time
 from datetime import datetime
@@ -9,6 +8,22 @@ import streamlit as st
 
 APP_PAGE_TITLE = "家貓情緒標註系統｜第 1 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group1.csv")
+# ============================================================
+# 照片資料尚未決定：先放空白 placeholder，讓你可以先看完整流程。
+# 之後把 path 改成實際圖片路徑即可，例如："images/cat_001.jpg"
+# ============================================================
+IMAGE_SET_1 = [
+    {"image_id": "set1_preview_001", "path": ""},
+    {"image_id": "set1_preview_002", "path": ""},
+    {"image_id": "set1_preview_003", "path": ""},
+]
+
+IMAGE_SET_2 = [
+    {"image_id": "set2_preview_001", "path": ""},
+    {"image_id": "set2_preview_002", "path": ""},
+    {"image_id": "set2_preview_003", "path": ""},
+]
+
 STAGE_PLAN = [
     {
         "stage_name": "第一階段",
@@ -29,22 +44,6 @@ STAGE_PLAN = [
 ]
 
 st.set_page_config(page_title=APP_PAGE_TITLE, layout="wide")
-
-# ============================================================
-# 照片資料尚未決定：先放空白 placeholder，讓你可以先看完整流程。
-# 之後把 path 改成實際圖片路徑即可，例如："images/cat_001.jpg"
-# ============================================================
-IMAGE_SET_1 = [
-    {"image_id": "set1_preview_001", "path": ""},
-    {"image_id": "set1_preview_002", "path": ""},
-    {"image_id": "set1_preview_003", "path": ""},
-]
-
-IMAGE_SET_2 = [
-    {"image_id": "set2_preview_001", "path": ""},
-    {"image_id": "set2_preview_002", "path": ""},
-    {"image_id": "set2_preview_003", "path": ""},
-]
 
 DATA_COLUMNS = [
     "participant_id",
