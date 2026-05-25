@@ -12,7 +12,7 @@ GROUP_ID = "2"
 
 # Google Sheet 自動儲存設定：請貼上 Apps Script Web App 的 /exec URL。
 # 若先保持空白，程式仍會正常儲存本機 CSV，不會送到 Google Sheet。
-SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vLQ/exec"
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwuq0gOYl6fCuiR6Y_Pfr4_eMiTPbRFzUGdeQCVp6UNYcxAXNd6RN6xx1eg_3KDhBifwg/exec"
 SHEET_SECRET = "hci_cat_annotation_secret"
 
 # ============================================================
@@ -136,9 +136,27 @@ st.markdown(
     """
     <style>
     .main-title {
-        font-size: 30px;
-        font-weight: 850;
+        font-size: 24px;
+        font-weight: 750;
         margin-bottom: 4px;
+    }
+    h2 {
+        font-size: 21px !important;
+        font-weight: 700 !important;
+        margin-top: 18px !important;
+        margin-bottom: 8px !important;
+    }
+    h3 {
+        font-size: 18px !important;
+        font-weight: 650 !important;
+        margin-top: 14px !important;
+        margin-bottom: 8px !important;
+    }
+    h4 {
+        font-size: 17px !important;
+        font-weight: 650 !important;
+        margin-top: 10px !important;
+        margin-bottom: 6px !important;
     }
     .sub-title {
         color: #555;
@@ -294,6 +312,7 @@ def retry_failed_cloud_sync():
     ok, msg = append_records_to_google_sheet(records)
     if ok:
         st.session_state["failed_cloud_records"] = []
+        st.session_state["last_save_message"] = msg
     return ok, msg
 
 
@@ -514,8 +533,26 @@ def render_flow_b(stage, image, prefix):
         go_next_image_or_questionnaire(record)
 
 
+LIKERT_OPTIONS = [
+    "非常不同意",
+    "不同意",
+    "普通",
+    "同意",
+    "非常同意",
+]
+
+LIKERT_SCORE_MAP = {
+    "非常不同意": 1,
+    "不同意": 2,
+    "普通": 3,
+    "同意": 4,
+    "非常同意": 5,
+}
+
+
 def likert(label, key):
-    return st.radio(label, [1, 2, 3, 4, 5], index=None, horizontal=True, key=key)
+    choice = st.radio(label, LIKERT_OPTIONS, index=None, horizontal=True, key=key)
+    return LIKERT_SCORE_MAP.get(choice) if choice is not None else None
 
 
 def avg_or_none(values):
@@ -527,9 +564,6 @@ def avg_or_none(values):
 def render_stage_questionnaire():
     stage = current_stage()
     st.markdown(f'<div class="main-title">{stage["stage_name"]}問卷回饋｜版本 {stage["flow_type"]}：{stage["flow_name"]}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">此問卷會套用到剛完成的這一階段所有照片紀錄。</div>', unsafe_allow_html=True)
-    st.caption("1 = 非常不同意，5 = 非常同意")
-
     st.markdown("### 認知負荷")
     wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{st.session_state.stage_index}_wl1")
     wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{st.session_state.stage_index}_wl2")
@@ -598,11 +632,6 @@ def render_intro():
             unsafe_allow_html=True,
         )
 
-    st.markdown("### 儲存欄位")
-    st.info(f"本網頁會自動寫入 group_id = {GROUP_ID}，用來區分第 1 組或第 2 組。")
-    st.code(", ".join(DATA_COLUMNS), language="text")
-    st.markdown('<div class="warn-box">目前照片先使用空白 placeholder，所以可以直接進入流程預覽。之後只要修改 IMAGE_SET_1 / IMAGE_SET_2 的 path 即可。</div>', unsafe_allow_html=True)
-
     if st.button("開始本組實驗", type="primary", disabled=not bool(st.session_state.participant_id)):
         st.session_state.page = "task"
         st.session_state.stage_index = 0
@@ -652,13 +681,12 @@ def render_done():
             try:
                 ok, msg = retry_failed_cloud_sync()
                 if ok:
-                    st.success(msg)
+                    st.session_state["last_save_message"] = msg
+                    st.rerun()
                 else:
                     st.info(msg)
             except Exception as e:
                 st.error(f"Google Sheet 重新同步失敗：{e}")
-    else:
-        st.success("目前沒有待重新同步的 Google Sheet 資料。")
 
     st.markdown(f"輸出檔案：`{OUTPUT_CSV.name}`")
     if OUTPUT_CSV.exists():
@@ -688,4 +716,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
