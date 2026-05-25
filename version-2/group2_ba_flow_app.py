@@ -10,15 +10,9 @@ APP_PAGE_TITLE = "家貓情緒標註系統｜第 2 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
 GROUP_ID = "2"
 
-# Google Sheet 自動儲存設定：請貼上 Apps Script Web App 的 /exec URL。
-# 若先保持空白，程式仍會正常儲存本機 CSV，不會送到 Google Sheet。
 SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vLQ/exec"
 SHEET_SECRET = "hci_cat_annotation_secret"
 
-# ============================================================
-# 照片資料尚未決定：先放空白 placeholder，讓你可以先看完整流程。
-# 之後把 path 改成實際圖片路徑即可，例如："images/cat_001.jpg"
-# ============================================================
 IMAGE_SET_1 = [
     {"image_id": "set1_preview_001", "path": ""},
     {"image_id": "set1_preview_002", "path": ""},
@@ -31,7 +25,6 @@ IMAGE_SET_2 = [
     {"image_id": "set2_preview_003", "path": ""},
 ]
 
-# 第 2 組：第一階段 B + 照片組 1；第二階段 A + 照片組 2
 STAGE_PLAN = [
     {
         "stage_name": "第一階段",
@@ -135,78 +128,250 @@ UNCERTAIN_REASONS = [
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+    /* ── Global reset & base ── */
+    html, body, [class*="css"] {
+        font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    /* Subtle warm parchment background */
+    .stApp {
+        background: #f7f4ef;
+    }
+
+    /* ── Main title ── */
     .main-title {
-        font-size: 24px;
-        font-weight: 750;
+        font-family: 'Noto Serif TC', serif;
+        font-size: 26px;
+        font-weight: 700;
+        color: #1a1208;
+        letter-spacing: 0.04em;
         margin-bottom: 4px;
+        line-height: 1.35;
     }
+
+    /* ── Headings override ── */
     h2 {
-        font-size: 21px !important;
+        font-family: 'Noto Serif TC', serif !important;
+        font-size: 19px !important;
         font-weight: 700 !important;
-        margin-top: 18px !important;
-        margin-bottom: 8px !important;
+        color: #2c1f0e !important;
+        letter-spacing: 0.03em !important;
+        margin-top: 28px !important;
+        margin-bottom: 10px !important;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #d4b896;
     }
+
     h3 {
-        font-size: 18px !important;
-        font-weight: 650 !important;
-        margin-top: 14px !important;
+        font-family: 'Noto Sans TC', sans-serif !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        color: #4a3520 !important;
+        letter-spacing: 0.04em !important;
+        margin-top: 20px !important;
         margin-bottom: 8px !important;
+        text-transform: uppercase;
     }
+
     h4 {
-        font-size: 17px !important;
-        font-weight: 650 !important;
-        margin-top: 10px !important;
+        font-family: 'Noto Sans TC', sans-serif !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        color: #5c4433 !important;
+        margin-top: 14px !important;
         margin-bottom: 6px !important;
     }
+
+    /* ── Subtitle ── */
     .sub-title {
-        color: #555;
-        font-size: 16px;
-        margin-bottom: 16px;
+        color: #7a6650;
+        font-size: 14px;
+        font-weight: 300;
+        margin-bottom: 24px;
+        letter-spacing: 0.02em;
     }
+
+    /* ── Cards ── */
     .flow-card {
-        padding: 14px 18px;
-        border: 1px solid #ddd;
-        border-radius: 14px;
-        background: #fafafa;
-        margin-bottom: 14px;
+        padding: 16px 20px;
+        border: 1px solid #e0d4c0;
+        border-left: 4px solid #c9a96e;
+        border-radius: 4px;
+        background: #fffdf8;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 4px rgba(180,140,80,0.07);
+        transition: box-shadow 0.2s;
+        font-size: 14px;
+        line-height: 1.7;
+        color: #3b2e1e;
     }
+
+    .flow-card:hover {
+        box-shadow: 0 3px 12px rgba(180,140,80,0.14);
+    }
+
     .active-card {
-        padding: 14px 18px;
-        border: 2px solid #635bff;
-        border-radius: 14px;
-        background: #f7f5ff;
-        margin-bottom: 14px;
+        padding: 14px 20px;
+        border: 1.5px solid #b07d3a;
+        border-left: 5px solid #b07d3a;
+        border-radius: 4px;
+        background: linear-gradient(135deg, #fffdf5 0%, #fff8e8 100%);
+        margin-bottom: 16px;
+        box-shadow: 0 2px 10px rgba(176,125,58,0.12);
+        font-size: 14px;
+        line-height: 1.7;
+        color: #3b2e1e;
     }
+
+    /* ── Warning box ── */
     .warn-box {
         padding: 12px 16px;
-        border-radius: 12px;
-        background: #fff8e1;
-        border: 1px solid #f0c36d;
+        border-radius: 4px;
+        background: #fffbf0;
+        border: 1px solid #e8c76d;
+        border-left: 4px solid #e8a800;
         margin: 10px 0 16px 0;
+        font-size: 13px;
+        color: #5a4000;
     }
+
+    /* ── Placeholder image area ── */
     .placeholder {
-        height: 430px;
-        border: 2px dashed #cfcfcf;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #fafafa, #f2f2f2);
+        height: 400px;
+        border: 1.5px dashed #c9b08a;
+        border-radius: 8px;
+        background: linear-gradient(160deg, #faf6ef 0%, #f0e9db 100%);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #777;
-        font-size: 20px;
-        font-weight: 700;
+        color: #9e8060;
+        font-size: 16px;
+        font-weight: 500;
         text-align: center;
         padding: 20px;
+        letter-spacing: 0.04em;
     }
+
+    /* ── Sidebar ── */
     section[data-testid="stSidebar"] {
-        width: 520px !important;
-        min-width: 520px !important;
+        width: 480px !important;
+        min-width: 480px !important;
+        background: #2c1f0e !important;
+        border-right: none;
     }
+
+    section[data-testid="stSidebar"] * {
+        color: #e8d9c0 !important;
+    }
+
     section[data-testid="stSidebar"] img {
-        max-height: 520px;
+        max-height: 480px;
         object-fit: contain;
-        border-radius: 12px;
+        border-radius: 8px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.4);
     }
+
+    section[data-testid="stSidebar"] h3 {
+        color: #d4b896 !important;
+        border-bottom: 1px solid #4a3520 !important;
+        padding-bottom: 6px;
+        text-transform: none !important;
+    }
+
+    /* ── Streamlit widget tweaks ── */
+    div[data-testid="stRadio"] > label {
+        font-size: 14px !important;
+        color: #3b2e1e !important;
+    }
+
+    div[data-testid="stRadio"] > div {
+        gap: 6px !important;
+    }
+
+    /* Radio button accent */
+    div[data-testid="stRadio"] input[type="radio"]:checked + div {
+        color: #b07d3a !important;
+    }
+
+    /* Primary button */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #b07d3a 0%, #8c5f20 100%) !important;
+        color: #fffdf8 !important;
+        border: none !important;
+        border-radius: 4px !important;
+        font-family: 'Noto Sans TC', sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.06em !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 2px 8px rgba(140,95,32,0.25) !important;
+        transition: all 0.2s !important;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        box-shadow: 0 4px 16px rgba(140,95,32,0.4) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* Secondary / default button */
+    .stButton > button:not([kind="primary"]) {
+        background: #fffdf8 !important;
+        color: #5c4433 !important;
+        border: 1.5px solid #c9a96e !important;
+        border-radius: 4px !important;
+        font-family: 'Noto Sans TC', sans-serif !important;
+        font-size: 13px !important;
+        transition: all 0.2s !important;
+    }
+
+    .stButton > button:not([kind="primary"]):hover {
+        background: #f5ede0 !important;
+        border-color: #b07d3a !important;
+    }
+
+    /* Text input */
+    .stTextInput input, .stTextArea textarea {
+        background: #fffdf8 !important;
+        border: 1.5px solid #d4c4a8 !important;
+        border-radius: 4px !important;
+        color: #1a1208 !important;
+        font-family: 'Noto Sans TC', sans-serif !important;
+        font-size: 14px !important;
+    }
+
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #b07d3a !important;
+        box-shadow: 0 0 0 3px rgba(176,125,58,0.12) !important;
+    }
+
+    /* Divider */
+    hr {
+        border-color: #e0d4c0 !important;
+        margin: 16px 0 !important;
+    }
+
+    /* Alerts */
+    div[data-testid="stAlert"] {
+        border-radius: 4px !important;
+        font-size: 13px !important;
+    }
+
+    /* Download button */
+    .stDownloadButton > button {
+        background: #fffdf8 !important;
+        color: #5c4433 !important;
+        border: 1.5px solid #c9a96e !important;
+        border-radius: 4px !important;
+        font-family: 'Noto Sans TC', sans-serif !important;
+        font-size: 13px !important;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f0e9db; }
+    ::-webkit-scrollbar-thumb { background: #c9a96e; border-radius: 3px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -260,7 +425,6 @@ def reset_all():
 
 
 def append_records_to_google_sheet(records):
-    """把資料同步寫入 Google Sheet。SHEET_WEBHOOK_URL 空白時會自動略過。"""
     if not SHEET_WEBHOOK_URL.strip():
         return False, "尚未設定 SHEET_WEBHOOK_URL，因此只儲存本機 CSV。"
 
@@ -277,13 +441,11 @@ def append_records_to_google_sheet(records):
 
 
 def save_records(records):
-    """保留原本 CSV 儲存，同時嘗試同步 Google Sheet。Google Sheet 失敗不會刪掉 CSV。"""
     rows = [{col: record.get(col, "") for col in DATA_COLUMNS} for record in records]
     df_new = pd.DataFrame(rows, columns=DATA_COLUMNS)
 
     if OUTPUT_CSV.exists():
         df_old = pd.read_csv(OUTPUT_CSV, encoding="utf-8-sig")
-        # 若舊 CSV 沒有新欄位，補空值，避免 concat 後欄位不一致。
         for col in DATA_COLUMNS:
             if col not in df_old.columns:
                 df_old[col] = ""
@@ -304,7 +466,6 @@ def save_records(records):
 
 
 def retry_failed_cloud_sync():
-    """只重送 Google Sheet 失敗資料，不會再次寫入 CSV。"""
     records = st.session_state.get("failed_cloud_records", [])
     if not records:
         return False, "目前沒有需要重新同步的資料。"
@@ -633,7 +794,7 @@ def render_intro():
             <div class="flow-card">
             <b>{idx}. {stage['stage_name']}</b><br>
             版本 {stage['flow_type']}：{stage['flow_name']} ＋ {stage['photo_set_name']}<br>
-            <span style="color:#666;">{stage['description']}</span>
+            <span style="color:#7a6650;">{stage['description']}</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -723,5 +884,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
