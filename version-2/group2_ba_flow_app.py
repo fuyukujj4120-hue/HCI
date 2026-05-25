@@ -1,14 +1,37 @@
-
 import json
 import time
-from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import requests
 import streamlit as st
 
 APP_PAGE_TITLE = "家貓情緒標註系統｜第 2 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
+GROUP_ID = "2"
+
+# Google Sheet 自動儲存設定：請貼上 Apps Script Web App 的 /exec URL。
+# 若先保持空白，程式仍會正常儲存本機 CSV，不會送到 Google Sheet。
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwuq0gOYl6fCuiR6Y_Pfr4_eMiTPbRFzUGdeQCVp6UNYcxAXNd6RN6xx1eg_3KDhBifwg/exec"
+SHEET_SECRET = "hci_cat_annotation_secret"
+
+# ============================================================
+# 照片資料尚未決定：先放空白 placeholder，讓你可以先看完整流程。
+# 之後把 path 改成實際圖片路徑即可，例如："images/cat_001.jpg"
+# ============================================================
+IMAGE_SET_1 = [
+    {"image_id": "set1_preview_001", "path": ""},
+    {"image_id": "set1_preview_002", "path": ""},
+    {"image_id": "set1_preview_003", "path": ""},
+]
+
+IMAGE_SET_2 = [
+    {"image_id": "set2_preview_001", "path": ""},
+    {"image_id": "set2_preview_002", "path": ""},
+    {"image_id": "set2_preview_003", "path": ""},
+]
+
+# 第 2 組：第一階段 B + 照片組 1；第二階段 A + 照片組 2
 STAGE_PLAN = [
     {
         "stage_name": "第一階段",
@@ -30,23 +53,10 @@ STAGE_PLAN = [
 
 st.set_page_config(page_title=APP_PAGE_TITLE, layout="wide")
 
-# ============================================================
-# 照片資料尚未決定：先放空白 placeholder，讓你可以先看完整流程。
-# 之後把 path 改成實際圖片路徑即可，例如："images/cat_001.jpg"
-# ============================================================
-IMAGE_SET_1 = [
-    {"image_id": "set1_preview_001", "path": ""},
-    {"image_id": "set1_preview_002", "path": ""},
-    {"image_id": "set1_preview_003", "path": ""},
-]
-
-IMAGE_SET_2 = [
-    {"image_id": "set2_preview_001", "path": ""},
-    {"image_id": "set2_preview_002", "path": ""},
-    {"image_id": "set2_preview_003", "path": ""},
-]
-
 DATA_COLUMNS = [
+    "group_id",
+    "stage_name",
+    "photo_set_name",
     "participant_id",
     "flow_type",
     "image_id",
@@ -197,6 +207,8 @@ def init_state():
         "image_index": 0,
         "task_start_time": None,
         "pending_stage_records": [],
+        "failed_cloud_records": [],
+        "last_save_message": "",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -225,18 +237,64 @@ def reset_all():
     st.session_state.image_index = 0
     st.session_state.task_start_time = None
     st.session_state.pending_stage_records = []
+    st.session_state.failed_cloud_records = []
+    st.session_state.last_save_message = ""
+
+
+def append_records_to_google_sheet(records):
+    """把資料同步寫入 Google Sheet。SHEET_WEBHOOK_URL 空白時會自動略過。"""
+    if not SHEET_WEBHOOK_URL.strip():
+        return False, "尚未設定 SHEET_WEBHOOK_URL，因此只儲存本機 CSV。"
+
+    payload = {
+        "secret": SHEET_SECRET,
+        "records": records,
+    }
+    resp = requests.post(SHEET_WEBHOOK_URL, json=payload, timeout=20)
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get("ok"):
+        raise ValueError(data.get("error", "Unknown Google Sheet error"))
+    return True, f"已同步 {data.get('inserted', len(records))} 筆到 Google Sheet。"
 
 
 def save_records(records):
+    """保留原本 CSV 儲存，同時嘗試同步 Google Sheet。Google Sheet 失敗不會刪掉 CSV。"""
     rows = [{col: record.get(col, "") for col in DATA_COLUMNS} for record in records]
     df_new = pd.DataFrame(rows, columns=DATA_COLUMNS)
+
     if OUTPUT_CSV.exists():
         df_old = pd.read_csv(OUTPUT_CSV, encoding="utf-8-sig")
+        # 若舊 CSV 沒有新欄位，補空值，避免 concat 後欄位不一致。
+        for col in DATA_COLUMNS:
+            if col not in df_old.columns:
+                df_old[col] = ""
+        df_old = df_old[DATA_COLUMNS]
         df_all = pd.concat([df_old, df_new], ignore_index=True)
     else:
         df_all = df_new
+
     df_all = df_all[DATA_COLUMNS]
     df_all.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
+
+    try:
+        ok, msg = append_records_to_google_sheet(rows)
+        st.session_state["last_save_message"] = msg
+    except Exception as e:
+        st.session_state["failed_cloud_records"].extend(rows)
+        st.session_state["last_save_message"] = f"CSV 已儲存，但 Google Sheet 同步失敗：{e}"
+
+
+def retry_failed_cloud_sync():
+    """只重送 Google Sheet 失敗資料，不會再次寫入 CSV。"""
+    records = st.session_state.get("failed_cloud_records", [])
+    if not records:
+        return False, "目前沒有需要重新同步的資料。"
+
+    ok, msg = append_records_to_google_sheet(records)
+    if ok:
+        st.session_state["failed_cloud_records"] = []
+    return ok, msg
 
 
 def render_placeholder(image_id):
@@ -321,6 +379,9 @@ def build_base_record(stage, image, initial_emotion, selected_features, final_em
         emotion_changed = ""
 
     return {
+        "group_id": GROUP_ID,
+        "stage_name": stage["stage_name"],
+        "photo_set_name": stage["photo_set_name"],
         "participant_id": st.session_state.participant_id,
         "flow_type": stage["flow_type"],
         "image_id": image["image_id"],
@@ -538,6 +599,7 @@ def render_intro():
         )
 
     st.markdown("### 儲存欄位")
+    st.info(f"本網頁會自動寫入 group_id = {GROUP_ID}，用來區分第 1 組或第 2 組。")
     st.code(", ".join(DATA_COLUMNS), language="text")
     st.markdown('<div class="warn-box">目前照片先使用空白 placeholder，所以可以直接進入流程預覽。之後只要修改 IMAGE_SET_1 / IMAGE_SET_2 的 path 即可。</div>', unsafe_allow_html=True)
 
@@ -579,6 +641,25 @@ def render_task():
 
 def render_done():
     st.success("此組兩個階段皆已完成。")
+
+    if st.session_state.get("last_save_message"):
+        st.info(st.session_state["last_save_message"])
+
+    failed_count = len(st.session_state.get("failed_cloud_records", []))
+    if failed_count > 0:
+        st.warning(f"目前有 {failed_count} 筆資料尚未成功同步到 Google Sheet。")
+        if st.button("再次同步到 Google Sheet", type="primary"):
+            try:
+                ok, msg = retry_failed_cloud_sync()
+                if ok:
+                    st.success(msg)
+                else:
+                    st.info(msg)
+            except Exception as e:
+                st.error(f"Google Sheet 重新同步失敗：{e}")
+    else:
+        st.success("目前沒有待重新同步的 Google Sheet 資料。")
+
     st.markdown(f"輸出檔案：`{OUTPUT_CSV.name}`")
     if OUTPUT_CSV.exists():
         st.download_button(
@@ -587,6 +668,7 @@ def render_done():
             file_name=OUTPUT_CSV.name,
             mime="text/csv",
         )
+
     if st.button("回首頁重新開始"):
         reset_all()
         st.rerun()
@@ -606,3 +688,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
