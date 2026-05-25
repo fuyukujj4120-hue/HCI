@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 APP_PAGE_TITLE = "家貓情緒標註系統｜第 2 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
@@ -411,6 +412,36 @@ def reset_task_timer():
     st.session_state.task_start_time = time.time()
 
 
+def request_scroll_to_top():
+    st.session_state["scroll_to_top"] = True
+
+
+def do_scroll_to_top_if_needed():
+    if st.session_state.pop("scroll_to_top", False):
+        components.html(
+            """
+            <script>
+            window.parent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+            </script>
+            """,
+            height=0,
+        )
+
+
+def clear_temp_csv_and_session_records():
+    """開始新的填答時清掉本機暫存 CSV 與雲端待上傳暫存，不影響 Google Sheet。"""
+    try:
+        if OUTPUT_CSV.exists():
+            OUTPUT_CSV.unlink()
+    except Exception as e:
+        st.warning(f"暫存 CSV 無法刪除：{e}")
+
+    st.session_state.pending_stage_records = []
+    st.session_state.pending_cloud_rows = []
+    st.session_state.cloud_sync_attempted = False
+    st.session_state.last_save_message = ""
+
+
 def reset_all():
     st.session_state.page = "intro"
     st.session_state.stage_index = 0
@@ -505,6 +536,7 @@ def go_previous_page():
     else:
         st.session_state.page = "intro"
 
+    request_scroll_to_top()
     st.rerun()
 
 
@@ -627,6 +659,7 @@ def go_next_image_or_questionnaire(record):
     st.session_state.task_start_time = None
     if st.session_state.image_index >= len(stage["images"]):
         st.session_state.page = "stage_questionnaire"
+    request_scroll_to_top()
     st.rerun()
 
 
@@ -821,6 +854,7 @@ def render_stage_questionnaire():
             else:
                 st.session_state.page = "task"
                 reset_task_timer()
+            request_scroll_to_top()
             st.rerun()
 
         st.divider()
@@ -848,11 +882,13 @@ def render_intro():
         )
 
     if st.button("開始本組實驗", type="primary", disabled=not bool(st.session_state.participant_id)):
+        clear_temp_csv_and_session_records()
         st.session_state.page = "task"
         st.session_state.stage_index = 0
         st.session_state.image_index = 0
         st.session_state.pending_stage_records = []
         reset_task_timer()
+        request_scroll_to_top()
         st.rerun()
 
 
@@ -863,6 +899,7 @@ def render_task():
 
     if image is None:
         st.session_state.page = "stage_questionnaire"
+        request_scroll_to_top()
         st.rerun()
         return
 
@@ -934,11 +971,13 @@ def render_done():
 
     if st.button("回首頁重新開始"):
         reset_all()
+        request_scroll_to_top()
         st.rerun()
 
 
 def main():
     init_state()
+    do_scroll_to_top_if_needed()
     if st.session_state.page == "intro":
         render_intro()
     elif st.session_state.page == "task":
