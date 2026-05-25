@@ -207,6 +207,8 @@ def init_state():
         "image_index": 0,
         "task_start_time": None,
         "pending_stage_records": [],
+        "failed_cloud_records": [],
+        "last_save_message": "",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -235,6 +237,8 @@ def reset_all():
     st.session_state.image_index = 0
     st.session_state.task_start_time = None
     st.session_state.pending_stage_records = []
+    st.session_state.failed_cloud_records = []
+    st.session_state.last_save_message = ""
 
 
 def append_records_to_google_sheet(records):
@@ -275,6 +279,9 @@ def save_records(records):
         ok, msg = append_records_to_google_sheet(rows)
         st.session_state["last_save_message"] = msg
     except Exception as e:
+        # CSV 已經成功存下來；若雲端同步失敗，先把這批資料暫存在 session，
+        # 讓使用者最後可以按「再次同步到 Google Sheet」重送，不會重複寫入 CSV。
+        st.session_state["failed_cloud_records"].extend(rows)
         st.session_state["last_save_message"] = f"CSV 已儲存，但 Google Sheet 同步失敗：{e}"
 
 def render_placeholder(image_id):
@@ -619,10 +626,32 @@ def render_task():
         render_flow_b(stage, image, prefix)
 
 
+def retry_failed_cloud_sync():
+    """只重送先前 Google Sheet 同步失敗的資料，不會再次寫入本機 CSV。"""
+    failed_records = st.session_state.get("failed_cloud_records", [])
+
+    if not failed_records:
+        st.session_state["last_save_message"] = "目前沒有需要重新同步到 Google Sheet 的資料。"
+        return
+
+    try:
+        ok, msg = append_records_to_google_sheet(failed_records)
+        st.session_state["failed_cloud_records"] = []
+        st.session_state["last_save_message"] = "重新同步成功：" + msg
+    except Exception as e:
+        st.session_state["last_save_message"] = f"重新同步 Google Sheet 仍失敗：{e}"
+
+
 def render_done():
     st.success("此組兩個階段皆已完成。")
     if st.session_state.get("last_save_message"):
         st.info(st.session_state["last_save_message"])
+
+    if st.session_state.get("failed_cloud_records"):
+        if st.button("再次同步到 Google Sheet", type="primary"):
+            retry_failed_cloud_sync()
+            st.rerun()
+
     st.markdown(f"輸出檔案：`{OUTPUT_CSV.name}`")
     if OUTPUT_CSV.exists():
         st.download_button(
@@ -650,4 +679,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
