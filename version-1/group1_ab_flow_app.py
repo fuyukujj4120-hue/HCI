@@ -14,7 +14,7 @@ GROUP_ID = "1"
 
 # Google Sheet 自動儲存設定：請貼上 Apps Script Web App 的 /exec URL。
 # 若先保持空白，程式仍會正常儲存本機 CSV，不會送到 Google Sheet。
-SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwuq0gOYl6fCuiR6Y_Pfr4_eMiTPbRFzUGdeQCVp6UNYcxAXNd6RN6xx1eg_3KDhBifwg/exec"
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vLQ/exec"
 SHEET_SECRET = "hci_cat_annotation_secret"
 # ============================================================
 # 照片資料尚未決定：先放空白 placeholder，讓你可以先看完整流程。
