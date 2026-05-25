@@ -563,53 +563,60 @@ def avg_or_none(values):
 
 def render_stage_questionnaire():
     stage = current_stage()
-    st.markdown(f'<div class="main-title">{stage["stage_name"]}問卷回饋｜版本 {stage["flow_type"]}：{stage["flow_name"]}</div>', unsafe_allow_html=True)
-    st.markdown("### 認知負荷")
-    wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{st.session_state.stage_index}_wl1")
-    wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{st.session_state.stage_index}_wl2")
-    wl3 = likert("我覺得此流程的判斷負擔較高。", f"q_{st.session_state.stage_index}_wl3")
 
-    st.markdown("### 標註信心")
-    cf1 = likert("我對自己最後選擇的情緒結果有信心。", f"q_{st.session_state.stage_index}_cf1")
-    cf2 = likert("我認為自己的標註結果有足夠依據。", f"q_{st.session_state.stage_index}_cf2")
-    cf3 = likert("我能根據照片中的特徵做出合理判斷。", f"q_{st.session_state.stage_index}_cf3")
+    left, center, right = st.columns([1, 2.2, 1])
+    with center:
+        st.markdown(
+            f'<div class="main-title" style="text-align:center;">{stage["stage_name"]}問卷回饋｜版本 {stage["flow_type"]}：{stage["flow_name"]}</div>',
+            unsafe_allow_html=True,
+        )
 
-    st.markdown("### 流程清楚度、有用性與使用意圖")
-    clarity = likert("我能清楚理解此標註流程的操作順序。", f"q_{st.session_state.stage_index}_clarity")
-    usefulness = likert("我認為此流程有助於我判斷家貓情緒。", f"q_{st.session_state.stage_index}_usefulness")
-    intention = likert("若未來需要標註家貓情緒，我願意使用此流程。", f"q_{st.session_state.stage_index}_intention")
+        st.markdown("### 認知負荷")
+        wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{st.session_state.stage_index}_wl1")
+        wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{st.session_state.stage_index}_wl2")
+        wl3 = likert("我覺得此流程的判斷負擔較高。", f"q_{st.session_state.stage_index}_wl3")
 
-    open_feedback = st.text_area(
-        "開放式回饋：請說明此流程的使用感受、判斷困難或改進建議。",
-        key=f"q_{st.session_state.stage_index}_open_feedback",
-    )
+        st.markdown("### 標註信心")
+        cf1 = likert("我對自己最後選擇的情緒結果有信心。", f"q_{st.session_state.stage_index}_cf1")
+        cf2 = likert("我認為自己的標註結果有足夠依據。", f"q_{st.session_state.stage_index}_cf2")
+        cf3 = likert("我能根據照片中的特徵做出合理判斷。", f"q_{st.session_state.stage_index}_cf3")
 
-    complete = all(v is not None for v in [wl1, wl2, wl3, cf1, cf2, cf3, clarity, usefulness, intention])
+        st.markdown("### 流程清楚度、有用性與使用意圖")
+        clarity = likert("我能清楚理解此標註流程的操作順序。", f"q_{st.session_state.stage_index}_clarity")
+        usefulness = likert("我認為此流程有助於我判斷家貓情緒。", f"q_{st.session_state.stage_index}_usefulness")
+        intention = likert("若未來需要標註家貓情緒，我願意使用此流程。", f"q_{st.session_state.stage_index}_intention")
 
-    if st.button("儲存此階段並進入下一階段", type="primary", disabled=not complete):
-        stage_records = []
-        for record in st.session_state.pending_stage_records:
-            record = dict(record)
-            record["workload_score"] = avg_or_none([wl1, wl2, wl3])
-            record["confidence_score"] = avg_or_none([cf1, cf2, cf3])
-            record["clarity_score"] = clarity
-            record["usefulness_score"] = usefulness
-            record["intention_score"] = intention
-            record["open_feedback"] = open_feedback
-            stage_records.append(record)
+        open_feedback = st.text_area(
+            "開放式回饋：請說明此流程的使用感受、判斷困難或改進建議。",
+            key=f"q_{st.session_state.stage_index}_open_feedback",
+        )
 
-        save_records(stage_records)
-        st.session_state.pending_stage_records = []
-        st.session_state.stage_index += 1
-        st.session_state.image_index = 0
-        st.session_state.task_start_time = None
+        complete = all(v is not None for v in [wl1, wl2, wl3, cf1, cf2, cf3, clarity, usefulness, intention])
 
-        if st.session_state.stage_index >= len(get_stage_plan()):
-            st.session_state.page = "done"
-        else:
-            st.session_state.page = "task"
-            reset_task_timer()
-        st.rerun()
+        if st.button("儲存此階段並進入下一階段", type="primary", disabled=not complete, use_container_width=True):
+            stage_records = []
+            for record in st.session_state.pending_stage_records:
+                record = dict(record)
+                record["workload_score"] = avg_or_none([wl1, wl2, wl3])
+                record["confidence_score"] = avg_or_none([cf1, cf2, cf3])
+                record["clarity_score"] = clarity
+                record["usefulness_score"] = usefulness
+                record["intention_score"] = intention
+                record["open_feedback"] = open_feedback
+                stage_records.append(record)
+
+            save_records(stage_records)
+            st.session_state.pending_stage_records = []
+            st.session_state.stage_index += 1
+            st.session_state.image_index = 0
+            st.session_state.task_start_time = None
+
+            if st.session_state.stage_index >= len(get_stage_plan()):
+                st.session_state.page = "done"
+            else:
+                st.session_state.page = "task"
+                reset_task_timer()
+            st.rerun()
 
 
 def render_intro():
