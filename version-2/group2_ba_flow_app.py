@@ -473,6 +473,48 @@ def sync_to_cloud():
     return ok, msg
 
 
+
+def go_previous_page():
+    """返回上一頁，不刪除已儲存的 CSV。主要用於流程預覽與操作修正。"""
+    page = st.session_state.get("page", "intro")
+
+    if page == "task":
+        if st.session_state.image_index > 0:
+            st.session_state.image_index -= 1
+            if st.session_state.pending_stage_records:
+                st.session_state.pending_stage_records.pop()
+            reset_task_timer()
+        elif st.session_state.stage_index > 0:
+            st.session_state.stage_index -= 1
+            prev_stage = get_stage_plan()[st.session_state.stage_index]
+            st.session_state.image_index = max(len(prev_stage["images"]) - 1, 0)
+            st.session_state.page = "task"
+            reset_task_timer()
+        else:
+            st.session_state.page = "intro"
+
+    elif page == "stage_questionnaire":
+        stage = current_stage()
+        st.session_state.page = "task"
+        st.session_state.image_index = max(len(stage["images"]) - 1, 0)
+        reset_task_timer()
+
+    elif page == "done":
+        st.session_state.page = "stage_questionnaire"
+
+    else:
+        st.session_state.page = "intro"
+
+    st.rerun()
+
+
+def render_back_button():
+    if st.session_state.get("page") != "intro":
+        if st.button("← 上一頁"):
+            go_previous_page()
+
+
+
 def render_placeholder(image_id):
     st.markdown(
         f'<div class="placeholder">圖片預覽區<br>目前尚未放入實際照片<br>image_id：{image_id}</div>',
@@ -719,6 +761,7 @@ def avg_or_none(values):
 
 
 def render_stage_questionnaire():
+    render_back_button()
     stage = current_stage()
 
     left, center, right = st.columns([1, 2.2, 1])
@@ -806,6 +849,7 @@ def render_intro():
 
 
 def render_task():
+    render_back_button()
     render_sidebar_image()
     stage = current_stage()
     image = current_image()
@@ -833,6 +877,7 @@ def render_task():
 
 
 def render_done():
+    render_back_button()
     st.success("此組兩個階段皆已完成。")
 
     # 進入 done 頁面時自動嘗試一次雲端同步（只跑一次）
@@ -870,14 +915,16 @@ def render_done():
             st.session_state["last_save_message"] = f"Google Sheet 重新同步失敗：{e}"
             st.rerun()
 
-    st.markdown(f"輸出檔案：`{OUTPUT_CSV.name}`")
+    st.markdown("### 匯出資料")
     if OUTPUT_CSV.exists():
         st.download_button(
-            "下載 CSV",
+            "📄 下載 CSV",
             OUTPUT_CSV.read_bytes(),
             file_name=OUTPUT_CSV.name,
             mime="text/csv",
+            type="primary",
         )
+        st.caption(f"輸出檔案：{OUTPUT_CSV.name}")
 
     if st.button("回首頁重新開始"):
         reset_all()
