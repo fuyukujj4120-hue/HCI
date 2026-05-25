@@ -673,6 +673,9 @@ def render_flow_a(stage, image, prefix):
         )
         go_next_image_or_questionnaire(record)
 
+    st.divider()
+    render_back_button()
+
 
 def render_flow_b(stage, image, prefix):
     st.markdown("## Step 1：觀看家貓照片")
@@ -731,6 +734,9 @@ def render_flow_b(stage, image, prefix):
         )
         go_next_image_or_questionnaire(record)
 
+    st.divider()
+    render_back_button()
+
 
 LIKERT_OPTIONS = [
     "非常不同意",
@@ -761,7 +767,6 @@ def avg_or_none(values):
 
 
 def render_stage_questionnaire():
-    render_back_button()
     stage = current_stage()
 
     left, center, right = st.columns([1, 2.2, 1])
@@ -818,6 +823,9 @@ def render_stage_questionnaire():
                 reset_task_timer()
             st.rerun()
 
+        st.divider()
+        render_back_button()
+
 
 def render_intro():
     st.markdown(f'<div class="main-title">{APP_PAGE_TITLE}</div>', unsafe_allow_html=True)
@@ -849,7 +857,6 @@ def render_intro():
 
 
 def render_task():
-    render_back_button()
     render_sidebar_image()
     stage = current_stage()
     image = current_image()
@@ -877,7 +884,6 @@ def render_task():
 
 
 def render_done():
-    render_back_button()
     st.success("此組兩個階段皆已完成。")
 
     # 進入 done 頁面時自動嘗試一次雲端同步（只跑一次）
@@ -930,6 +936,9 @@ def render_done():
         reset_all()
         st.rerun()
 
+    st.divider()
+    render_back_button()
+
 
 def main():
     init_state()
@@ -945,5 +954,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
