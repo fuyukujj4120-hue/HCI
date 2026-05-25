@@ -10,7 +10,7 @@ APP_PAGE_TITLE = "家貓情緒標註系統｜第 2 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
 GROUP_ID = "2"
 
-SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vLQ/exec"
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vL/exec"
 SHEET_SECRET = "hci_cat_annotation_secret"
 
 IMAGE_SET_1 = [
