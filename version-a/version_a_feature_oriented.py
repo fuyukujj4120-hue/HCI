@@ -1,4 +1,3 @@
-
 import json
 import time
 from datetime import datetime
@@ -10,11 +9,18 @@ import streamlit as st
 st.set_page_config(page_title="家貓情緒標註系統 - 版本 A", layout="wide")
 
 # ============================================================
-# 可修改區：照片資料尚未決定，先保持空白
-# 之後只要把照片放到 images/ 資料夾，並在 IMAGE_ITEMS 加入資料即可。
-# 範例：{"image_id": "cat_001", "path": "images/cat_001.jpg"}
+# 流程預覽模式：照片尚未決定，所以先放 3 筆「空白照片」讓你可以進入流程測試。
+# 之後正式放照片時，只要改成：
+# IMAGE_ITEMS = [
+#     {"image_id": "cat_001", "path": "images/cat_001.jpg"},
+#     {"image_id": "cat_002", "path": "images/cat_002.jpg"},
+# ]
 # ============================================================
-IMAGE_ITEMS = []
+IMAGE_ITEMS = [
+    {"image_id": "preview_001", "path": ""},
+    {"image_id": "preview_002", "path": ""},
+    {"image_id": "preview_003", "path": ""},
+]
 
 FLOW_TYPE = "A"
 FLOW_NAME = "特徵導向"
@@ -202,7 +208,14 @@ def render_sidebar_image():
         elif image_path:
             st.warning(f"找不到圖片：{image_path}")
         else:
-            st.warning("此筆資料尚未設定圖片路徑。")
+            st.markdown(
+                """
+                <div style="height:360px;border:2px dashed #cccccc;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#fafafa;color:#777;font-size:18px;text-align:center;padding:20px;">
+                    照片尚未放入<br>此處為流程預覽用空白區塊
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 def render_feature_selector():
@@ -308,7 +321,7 @@ def render_questionnaire():
 
 def render_intro():
     st.markdown(f'<div class="main-title">家貓情緒標註系統：版本 {FLOW_TYPE}｜{FLOW_NAME}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">本版本依 proposal 的流程與資料欄位設計，照片資料目前先保留空白。</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">本版本依 proposal 的流程與資料欄位設計，目前使用空白照片作為流程預覽。</div>', unsafe_allow_html=True)
 
     participant_id = st.text_input("受試者學號／代號", value=st.session_state.participant_id)
     st.session_state.participant_id = participant_id.strip()
@@ -327,11 +340,11 @@ def render_intro():
 
     if not IMAGE_ITEMS:
         st.markdown(
-            '<div class="warn-box">目前照片資料尚未決定，因此 IMAGE_ITEMS 先保持空白。加入照片後即可開始標註。</div>',
+            '<div class="warn-box">目前是流程預覽模式：照片先以空白 placeholder 呈現，仍可完整測試標註流程與儲存欄位。</div>',
             unsafe_allow_html=True,
         )
 
-    disabled = not bool(st.session_state.participant_id) or not bool(IMAGE_ITEMS)
+    disabled = not bool(st.session_state.participant_id)
     if st.button("開始標註", type="primary", disabled=disabled):
         st.session_state.page = "annotation"
         st.session_state.current_index = 0
@@ -438,3 +451,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
