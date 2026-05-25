@@ -936,9 +936,6 @@ def render_done():
         reset_all()
         st.rerun()
 
-    st.divider()
-    render_back_button()
-
 
 def main():
     init_state()
@@ -954,6 +951,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
