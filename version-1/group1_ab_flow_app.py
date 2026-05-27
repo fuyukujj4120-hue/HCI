@@ -1271,8 +1271,7 @@ def render_intro():
         f'<div class="main-title">🐱 {APP_PAGE_TITLE.replace("🐱 ", "")}</div>',
         unsafe_allow_html=True,
     )
-    st.markdown('<div class="sub-title">一個網頁完成同一組受試者的兩個階段：A 與 B 都會做，但順序與照片組不同。</div>', unsafe_allow_html=True)
-
+    
     participant_id = st.text_input("受試者學號／代號", value=st.session_state.participant_id)
     st.session_state.participant_id = participant_id.strip()
 
