@@ -1025,7 +1025,7 @@ QUESTIONNAIRE_CSS = """
     font-family: 'Noto Serif TC', serif;
     font-size: 18px;
     color: #3b2e1e;
-    font-weight: 400;
+    font-weight: 700;
     margin-bottom: 12px;
     line-height: 1.5;
 }
