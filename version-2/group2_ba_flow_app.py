@@ -52,7 +52,7 @@ EMOTION_SCHEMA = {
         "definition": "由立即感知到的危險或危險的威脅引起的，表現為警惕和試圖撤退或逃跑。",
         "image": Path("images/fear.png"),
     },
-    "憤怒/狂怒": {
+    "憤怒": {
         "icon": "😾",
         "definition": "由執行行動/實現目標的願望受挫或資源競爭引起，表現為攻擊性或攻擊威脅。",
         "image": Path("images/anger.png"),
@@ -72,11 +72,6 @@ EMOTION_SCHEMA = {
         "definition": "由新奇或顯著刺激引起，表現為注意、定向或探索行為。",
         "image": Path("images/interest.png"),
     },
-    "生氣": {
-        "icon": "😤",
-        "definition": "因不滿或受挫而產生的情緒反應，可能伴隨輕微的攻擊或防禦姿態。",
-        "image": None,
-    },
     "中性": {
         "icon": "➖",
         "definition": "不明顯屬於特定情緒，偏中性、休息或日常活動的狀態。",
@@ -87,7 +82,7 @@ EMOTION_SCHEMA = {
 # 對應到 EMOTION_OPTIONS 的情緒定義查詢（做彈性映射）
 EMOTION_OPTIONS = [
     "害怕",
-    "生氣",
+    "憤怒",
     "滿意",
     "好奇",
     "中性",
@@ -96,12 +91,11 @@ EMOTION_OPTIONS = [
 
 EMOTION_ICONS = {
     "害怕": "😿",
-    "生氣": "😾",
+    "憤怒": "😾",
     "滿意": "😽",
     "好奇": "🐾",
     "中性": "➖",
     "其他／無法判斷": "❓",
-    "憤怒/狂怒": "😾",
     "歡樂/玩耍": "😺",
 }
 
@@ -691,7 +685,7 @@ def render_sidebar_emotion_quickview():
         # 只列出有定義的情緒（對應 EMOTION_OPTIONS 的子集）
         quickview_emotions = [
             ("害怕", "😿 害怕"),
-            ("憤怒/狂怒", "😾 憤怒/狂怒"),
+            ("憤怒", "😾 憤怒"),
             ("歡樂/玩耍", "😺 歡樂/玩耍"),
             ("滿意", "😽 滿意"),
             ("好奇", "🐾 好奇"),
@@ -924,9 +918,131 @@ LIKERT_SCORE_MAP = {
     "非常同意": 5,
 }
 
+QUESTIONNAIRE_CSS = """
+<style>
+/* ── 問卷區塊卡片 ── */
+.q-section-card {
+    background: #fffdf8;
+    border: 1px solid #e0d4c0;
+    border-radius: 10px;
+    padding: 22px 26px 18px 26px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(180,140,80,0.07);
+}
+
+.q-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid #e8d8be;
+}
+
+.q-section-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.q-section-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4a3520;
+    letter-spacing: 0.04em;
+}
+
+.q-section-subtitle {
+    font-size: 11.5px;
+    color: #9e8060;
+    margin-top: 1px;
+}
+
+/* ── 問題行 ── */
+.q-item {
+    background: #faf7f2;
+    border: 1px solid #ede3d1;
+    border-radius: 7px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+.q-item-label {
+    font-size: 13.5px;
+    color: #3b2e1e;
+    font-weight: 500;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* Likert 量表標籤列 */
+.likert-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #9e8060;
+    margin-top: -4px;
+    margin-bottom: 2px;
+    padding: 0 4px;
+}
+
+/* 完成度提示 */
+.q-progress-tip {
+    font-size: 12.5px;
+    color: #9e8060;
+    text-align: center;
+    margin: 6px 0 14px 0;
+    letter-spacing: 0.02em;
+}
+
+.q-complete-tip {
+    font-size: 12.5px;
+    color: #6b8c5a;
+    text-align: center;
+    margin: 6px 0 14px 0;
+    font-weight: 600;
+}
+
+/* 開放回饋區 */
+.q-feedback-card {
+    background: #fffdf8;
+    border: 1px solid #e0d4c0;
+    border-radius: 10px;
+    padding: 20px 26px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(180,140,80,0.07);
+}
+
+.q-feedback-label {
+    font-size: 13.5px;
+    color: #4a3520;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.q-feedback-hint {
+    font-size: 12px;
+    color: #9e8060;
+    margin-bottom: 10px;
+}
+</style>
+"""
+
 
 def likert(label, key):
-    choice = st.radio(label, LIKERT_OPTIONS, index=None, horizontal=True, key=key)
+    st.markdown(
+        f'<div class="q-item-label">· {label}</div>'
+        f'<div class="likert-labels"><span>← 非常不同意</span><span>非常同意 →</span></div>',
+        unsafe_allow_html=True,
+    )
+    choice = st.radio(
+        label,
+        LIKERT_OPTIONS,
+        index=None,
+        horizontal=True,
+        key=key,
+        label_visibility="collapsed",
+    )
     return LIKERT_SCORE_MAP.get(choice) if choice is not None else None
 
 
@@ -938,37 +1054,174 @@ def avg_or_none(values):
 
 def render_stage_questionnaire():
     stage = current_stage()
+    si = st.session_state.stage_index
 
-    left, center, right = st.columns([1, 2.2, 1])
+    st.markdown(QUESTIONNAIRE_CSS, unsafe_allow_html=True)
+
+    left, center, right = st.columns([1, 2.4, 1])
     with center:
+
+        # ── 頁面標題 ──
         st.markdown(
-            f'<div class="main-title" style="text-align:center;">{stage["stage_name"]}問卷回饋｜版本 {stage["flow_type"]}：{stage["flow_name"]}</div>',
+            f"""
+            <div style="text-align:center;margin-bottom:6px;">
+                <div style="font-size:28px;margin-bottom:6px;">📋</div>
+                <div class="main-title" style="text-align:center;">
+                    {stage["stage_name"]} 使用體驗問卷
+                </div>
+                <div class="sub-title" style="text-align:center;margin-top:4px;">
+                    版本 {stage["flow_type"]}：{stage["flow_name"]}｜請根據剛才的標註體驗作答
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
-        st.markdown("### 認知負荷")
-        wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{st.session_state.stage_index}_wl1")
-        wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{st.session_state.stage_index}_wl2")
-        wl3 = likert("我覺得此流程的判斷負擔較高。", f"q_{st.session_state.stage_index}_wl3")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        st.markdown("### 標註信心")
-        cf1 = likert("我對自己最後選擇的情緒結果有信心。", f"q_{st.session_state.stage_index}_cf1")
-        cf2 = likert("我認為自己的標註結果有足夠依據。", f"q_{st.session_state.stage_index}_cf2")
-        cf3 = likert("我能根據照片中的特徵做出合理判斷。", f"q_{st.session_state.stage_index}_cf3")
-
-        st.markdown("### 流程清楚度、有用性與使用意圖")
-        clarity = likert("我能清楚理解此標註流程的操作順序。", f"q_{st.session_state.stage_index}_clarity")
-        usefulness = likert("我認為此流程有助於我判斷家貓情緒。", f"q_{st.session_state.stage_index}_usefulness")
-        intention = likert("若未來需要標註家貓情緒，我願意使用此流程。", f"q_{st.session_state.stage_index}_intention")
-
-        open_feedback = st.text_area(
-            "開放式回饋：請說明此流程的使用感受、判斷困難或改進建議。",
-            key=f"q_{st.session_state.stage_index}_open_feedback",
+        # ══════════════════════════════════════
+        # 區塊一：認知負荷
+        # ══════════════════════════════════════
+        st.markdown(
+            """
+            <div class="q-section-card">
+              <div class="q-section-header">
+                <span class="q-section-icon">🧠</span>
+                <div>
+                  <div class="q-section-title">認知負荷</div>
+                  <div class="q-section-subtitle">評估此流程對您造成的心智負擔程度</div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-        complete = all(v is not None for v in [wl1, wl2, wl3, cf1, cf2, cf3, clarity, usefulness, intention])
+        with st.container():
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{si}_wl1")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        if st.button("儲存此階段並進入下一階段", type="primary", disabled=not complete, use_container_width=True):
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{si}_wl2")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            wl3 = likert("我覺得此流程的判斷負擔較高。", f"q_{si}_wl3")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ══════════════════════════════════════
+        # 區塊二：標註信心
+        # ══════════════════════════════════════
+        st.markdown(
+            """
+            <div class="q-section-card">
+              <div class="q-section-header">
+                <span class="q-section-icon">🎯</span>
+                <div>
+                  <div class="q-section-title">標註信心</div>
+                  <div class="q-section-subtitle">評估您對自己標註結果的把握程度</div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.container():
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            cf1 = likert("我對自己最後選擇的情緒結果有信心。", f"q_{si}_cf1")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            cf2 = likert("我認為自己的標註結果有足夠依據。", f"q_{si}_cf2")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            cf3 = likert("我能根據照片中的特徵做出合理判斷。", f"q_{si}_cf3")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ══════════════════════════════════════
+        # 區塊三：流程清楚度、有用性與使用意圖
+        # ══════════════════════════════════════
+        st.markdown(
+            """
+            <div class="q-section-card">
+              <div class="q-section-header">
+                <span class="q-section-icon">✨</span>
+                <div>
+                  <div class="q-section-title">流程評估</div>
+                  <div class="q-section-subtitle">評估此流程的清楚程度、有用性與未來使用意願</div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.container():
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            clarity = likert("我能清楚理解此標註流程的操作順序。", f"q_{si}_clarity")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            usefulness = likert("我認為此流程有助於我判斷家貓情緒。", f"q_{si}_usefulness")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            st.markdown('<div class="q-item">', unsafe_allow_html=True)
+            intention = likert("若未來需要標註家貓情緒，我願意使用此流程。", f"q_{si}_intention")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ══════════════════════════════════════
+        # 區塊四：開放式回饋
+        # ══════════════════════════════════════
+        st.markdown(
+            """
+            <div class="q-feedback-card">
+              <div class="q-section-header">
+                <span class="q-section-icon">💬</span>
+                <div>
+                  <div class="q-section-title">開放式回饋</div>
+                  <div class="q-section-subtitle">您的意見將幫助我們改善標註流程</div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        open_feedback = st.text_area(
+            "請說明此流程的使用感受、判斷困難或改進建議（選填）",
+            key=f"q_{si}_open_feedback",
+            height=110,
+            placeholder="例如：步驟順序感覺很自然、某張照片特別難判斷耳朵方向…",
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ── 完成提示與送出按鈕 ──
+        complete = all(v is not None for v in [wl1, wl2, wl3, cf1, cf2, cf3, clarity, usefulness, intention])
+        answered = sum(1 for v in [wl1, wl2, wl3, cf1, cf2, cf3, clarity, usefulness, intention] if v is not None)
+        total_q = 9
+
+        if complete:
+            st.markdown(
+                f'<div class="q-complete-tip">✅ 所有 {total_q} 題已填答完畢，可以送出！</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<div class="q-progress-tip">已填答 {answered} / {total_q} 題，請完成所有題目後送出。</div>',
+                unsafe_allow_html=True,
+            )
+
+        if st.button("儲存此階段並進入下一階段 →", type="primary", disabled=not complete, use_container_width=True):
             stage_records = []
             for record in st.session_state.pending_stage_records:
                 record = dict(record)
@@ -994,6 +1247,7 @@ def render_stage_questionnaire():
             request_scroll_to_top()
             st.rerun()
 
+        st.markdown("<br>", unsafe_allow_html=True)
         st.divider()
         render_back_button()
 
@@ -1151,6 +1405,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 
