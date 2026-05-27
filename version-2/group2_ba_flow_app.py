@@ -433,6 +433,53 @@ st.markdown(
         border-color: #b07d3a !important;
         color: #8c5f20 !important;
     }
+
+    /* ── 題目字體放大 ── */
+    div[data-testid="stRadio"] > label p,
+    div[data-testid="stRadio"] > label,
+    div[data-testid="stTextInput"] > label p,
+    div[data-testid="stTextArea"] > label p {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        color: #2c1f0e !important;
+        line-height: 1.6 !important;
+    }
+
+    h2 {
+        font-size: 24px !important;
+    }
+
+    h3 {
+        font-size: 20px !important;
+    }
+
+    h4 {
+        font-size: 18px !important;
+    }
+
+    /* ── 選項置中 ── */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 10px 14px !important;
+        width: 100% !important;
+    }
+
+    div[data-testid="stRadio"] label {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-align: center !important;
+        min-height: 42px !important;
+        padding: 6px 10px !important;
+    }
+
+    div[data-testid="stRadio"] label p {
+        text-align: center !important;
+        margin: 0 auto !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -509,7 +556,16 @@ def do_scroll_to_top_if_needed():
         components.html(
             """
             <script>
-            window.parent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+            function scrollTopNow() {
+                try {
+                    window.parent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                    window.parent.document.documentElement.scrollTop = 0;
+                    window.parent.document.body.scrollTop = 0;
+                } catch (e) {}
+            }
+            scrollTopNow();
+            setTimeout(scrollTopNow, 100);
+            setTimeout(scrollTopNow, 350);
             </script>
             """,
             height=0,
@@ -572,8 +628,14 @@ DATA_COLUMNS = [
     "annotation_time",
     "emotion_changed",
     "workload_score",
+    "workload_q1",
+    "workload_q2",
+    "workload_q3",
     "clarity_score",
     "confidence_score",
+    "confidence_q1",
+    "confidence_q2",
+    "confidence_q3",
     "usefulness_score",
     "intention_score",
     "open_feedback",
@@ -733,7 +795,6 @@ def render_feature_selector(prefix):
             )
         else:
             feature_other_text[group_name] = ""
-        st.divider()
     return feature_values, feature_other_text
 
 
@@ -776,8 +837,14 @@ def build_base_record(stage, image, initial_emotion, selected_features, final_em
         "annotation_time": annotation_time,
         "emotion_changed": emotion_changed,
         "workload_score": "",
+        "workload_q1": "",
+        "workload_q2": "",
+        "workload_q3": "",
         "clarity_score": "",
         "confidence_score": "",
+        "confidence_q1": "",
+        "confidence_q2": "",
+        "confidence_q3": "",
         "usefulness_score": "",
         "intention_score": "",
         "open_feedback": "",
@@ -839,7 +906,6 @@ def render_flow_a(stage, image, prefix):
         )
         go_next_image_or_questionnaire(record)
 
-    st.divider()
     render_back_button()
 
 
@@ -867,12 +933,6 @@ def render_flow_b(stage, image, prefix):
         key=f"{prefix}_final_emotion",
         format_func=lambda x: f"{EMOTION_ICONS.get(x, '')} {x}",
     )
-
-    if initial_emotion and final_emotion:
-        if initial_emotion == final_emotion:
-            st.success("初步情緒與最終情緒相同，emotion_changed = False")
-        else:
-            st.warning("初步情緒與最終情緒不同，emotion_changed = True")
 
     uncertain_reason, uncertain_other_text = render_uncertain_reason(prefix, final_emotion or "")
 
@@ -902,7 +962,6 @@ def render_flow_b(stage, image, prefix):
         )
         go_next_image_or_questionnaire(record)
 
-    st.divider()
     render_back_button()
 
 
@@ -938,9 +997,8 @@ QUESTIONNAIRE_CSS = """
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1.5px solid #e8d8be;
+    margin-bottom: 0;
+    padding-bottom: 0;
 }
 
 .q-section-icon {
@@ -972,21 +1030,23 @@ QUESTIONNAIRE_CSS = """
 }
 
 .q-item-label {
-    font-size: 13.5px;
+    font-size: 20px;
     color: #3b2e1e;
-    font-weight: 500;
-    margin-bottom: 8px;
-    line-height: 1.5;
+    font-weight: 800;
+    margin-top: 18px;
+    margin-bottom: 10px;
+    line-height: 1.55;
+    text-align: left;
 }
 
 /* Likert 量表標籤列 */
 .likert-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: 12px;
     color: #9e8060;
-    margin-top: -4px;
-    margin-bottom: 2px;
+    margin-top: -2px;
+    margin-bottom: 8px;
     padding: 0 4px;
 }
 
@@ -1028,6 +1088,16 @@ QUESTIONNAIRE_CSS = """
     font-size: 12px;
     color: #9e8060;
     margin-bottom: 10px;
+}
+
+/* 只調整問卷頁的 Likert 選項：置中、加大 */
+div[data-testid="stRadio"] > div[role="radiogroup"] {
+    justify-content: center !important;
+    gap: 28px !important;
+}
+div[data-testid="stRadio"] > div[role="radiogroup"] label {
+    font-size: 17px !important;
+    justify-content: center !important;
 }
 </style>
 """
@@ -1102,18 +1172,9 @@ def render_stage_questionnaire():
         )
 
         with st.container():
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{si}_wl1")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{si}_wl2")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             wl3 = likert("我覺得此流程的判斷負擔較高。", f"q_{si}_wl3")
-            st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ══════════════════════════════════════
@@ -1135,18 +1196,9 @@ def render_stage_questionnaire():
         )
 
         with st.container():
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             cf1 = likert("我對自己最後選擇的情緒結果有信心。", f"q_{si}_cf1")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             cf2 = likert("我認為自己的標註結果有足夠依據。", f"q_{si}_cf2")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             cf3 = likert("我能根據照片中的特徵做出合理判斷。", f"q_{si}_cf3")
-            st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ══════════════════════════════════════
@@ -1168,18 +1220,9 @@ def render_stage_questionnaire():
         )
 
         with st.container():
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             clarity = likert("我能清楚理解此標註流程的操作順序。", f"q_{si}_clarity")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             usefulness = likert("我認為此流程有助於我判斷家貓情緒。", f"q_{si}_usefulness")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             intention = likert("若未來需要標註家貓情緒，我願意使用此流程。", f"q_{si}_intention")
-            st.markdown('</div>', unsafe_allow_html=True)
-
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ══════════════════════════════════════
@@ -1229,8 +1272,15 @@ def render_stage_questionnaire():
             stage_records = []
             for record in st.session_state.pending_stage_records:
                 record = dict(record)
-                record["workload_score"] = avg_or_none([wl1, wl2, wl3])
-                record["confidence_score"] = avg_or_none([cf1, cf2, cf3])
+                # 不先平均；直接保留每一題原始分數，後續可在 Excel / SPSS 再計算平均或加總。
+                record["workload_score"] = ""
+                record["workload_q1"] = wl1
+                record["workload_q2"] = wl2
+                record["workload_q3"] = wl3
+                record["confidence_score"] = ""
+                record["confidence_q1"] = cf1
+                record["confidence_q2"] = cf2
+                record["confidence_q3"] = cf3
                 record["clarity_score"] = clarity
                 record["usefulness_score"] = usefulness
                 record["intention_score"] = intention
@@ -1252,7 +1302,6 @@ def render_stage_questionnaire():
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.divider()
         render_back_button()
 
 
