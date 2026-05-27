@@ -926,7 +926,7 @@ def render_flow_b(stage, image, prefix):
         format_func=lambda x: f"{EMOTION_ICONS.get(x, '')} {x}",
     )
 
-  
+    
 
     uncertain_reason, uncertain_other_text = render_uncertain_reason(prefix, final_emotion or "")
 
