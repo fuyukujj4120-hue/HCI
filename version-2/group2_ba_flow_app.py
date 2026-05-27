@@ -513,20 +513,24 @@ def do_scroll_to_top_if_needed():
             <script>
             function forceScrollToTop() {
                 try {
-                    const doc = window.parent.document;
+                    const win = window.parent;
+                    const doc = win.document;
 
-                    // 1) 先處理瀏覽器本身的捲動
-                    window.parent.scrollTo(0, 0);
+                    // 先處理瀏覽器本身的捲動位置
+                    win.scrollTo(0, 0);
                     doc.documentElement.scrollTop = 0;
                     doc.body.scrollTop = 0;
 
-                    // 2) Streamlit 不同版本的主要捲動容器可能不同，全部嘗試歸零
+                    // Streamlit 不同版本的主要捲動容器名稱不一樣，所以全部嘗試
                     const selectors = [
-                        'section.main',
-                        'section[data-testid="stAppViewContainer"]',
                         'div[data-testid="stAppViewContainer"]',
-                        'div[data-testid="stVerticalBlock"]',
+                        'section[data-testid="stAppViewContainer"]',
+                        'section[data-testid="stMain"]',
+                        'div[data-testid="stMain"]',
+                        'section.main',
                         'main',
+                        '.main',
+                        '.block-container',
                         '.stApp'
                     ];
 
@@ -534,32 +538,42 @@ def do_scroll_to_top_if_needed():
                         doc.querySelectorAll(selector).forEach((el) => {
                             try {
                                 el.scrollTop = 0;
+                                el.scrollLeft = 0;
                                 if (el.scrollTo) {
-                                    el.scrollTo({ top: 0, left: 0, behavior: "auto" });
+                                    el.scrollTo(0, 0);
                                 }
                             } catch (e) {}
                         });
                     });
 
-                    // 3) 最保險：把所有可捲動的主要區塊都拉回頂端
-                    doc.querySelectorAll('section, main, div').forEach((el) => {
+                    // 最後暴力掃描：只要是可捲動容器，就拉回頂部
+                    doc.querySelectorAll('div, section, main, article, body, html').forEach((el) => {
                         try {
-                            if (el.scrollHeight > el.clientHeight) {
+                            const style = win.getComputedStyle(el);
+                            const canScroll = el.scrollHeight > el.clientHeight;
+                            const overflowY = style.overflowY;
+                            if (canScroll && ['auto', 'scroll', 'overlay', 'visible'].includes(overflowY)) {
                                 el.scrollTop = 0;
+                                if (el.scrollTo) {
+                                    el.scrollTo(0, 0);
+                                }
                             }
                         } catch (e) {}
                     });
 
+                    // 有 top anchor 的話，也讓它進入畫面
+                    const topAnchor = doc.getElementById('page_top_anchor');
+                    if (topAnchor) {
+                        topAnchor.scrollIntoView({ behavior: 'auto', block: 'start' });
+                    }
                 } catch (e) {}
             }
 
+            // Streamlit 會在 rerun 後稍微晚一點才完成 DOM 重建，所以要延遲多次執行
             forceScrollToTop();
-            setTimeout(forceScrollToTop, 50);
-            setTimeout(forceScrollToTop, 150);
-            setTimeout(forceScrollToTop, 300);
-            setTimeout(forceScrollToTop, 600);
-            setTimeout(forceScrollToTop, 1000);
-            setTimeout(forceScrollToTop, 1500);
+            [50, 150, 300, 600, 1000, 1500, 2200].forEach((delay) => {
+                setTimeout(forceScrollToTop, delay);
+            });
             </script>
             """,
             height=0,
@@ -1647,7 +1661,11 @@ def render_done():
 
 def main():
     init_state()
-    do_scroll_to_top_if_needed()
+
+    # 放一個頁面頂端錨點，讓送出後可以明確捲回這裡。
+    # 注意：scroll script 要放在頁面內容 render 完之後執行，否則 Streamlit 重新繪製後會把位置蓋回去。
+    st.markdown('<div id="page_top_anchor"></div>', unsafe_allow_html=True)
+
     if st.session_state.page == "intro":
         render_intro()
     elif st.session_state.page == "task":
@@ -1656,6 +1674,8 @@ def main():
         render_stage_questionnaire()
     elif st.session_state.page == "done":
         render_done()
+
+    do_scroll_to_top_if_needed()
 
 
 if __name__ == "__main__":
