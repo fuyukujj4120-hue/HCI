@@ -511,17 +511,55 @@ def do_scroll_to_top_if_needed():
         components.html(
             """
             <script>
-            const scrollTop = () => {
+            function forceScrollToTop() {
                 try {
-                    window.parent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-                    window.parent.document.documentElement.scrollTop = 0;
-                    window.parent.document.body.scrollTop = 0;
+                    const doc = window.parent.document;
+
+                    // 1) 先處理瀏覽器本身的捲動
+                    window.parent.scrollTo(0, 0);
+                    doc.documentElement.scrollTop = 0;
+                    doc.body.scrollTop = 0;
+
+                    // 2) Streamlit 不同版本的主要捲動容器可能不同，全部嘗試歸零
+                    const selectors = [
+                        'section.main',
+                        'section[data-testid="stAppViewContainer"]',
+                        'div[data-testid="stAppViewContainer"]',
+                        'div[data-testid="stVerticalBlock"]',
+                        'main',
+                        '.stApp'
+                    ];
+
+                    selectors.forEach((selector) => {
+                        doc.querySelectorAll(selector).forEach((el) => {
+                            try {
+                                el.scrollTop = 0;
+                                if (el.scrollTo) {
+                                    el.scrollTo({ top: 0, left: 0, behavior: "auto" });
+                                }
+                            } catch (e) {}
+                        });
+                    });
+
+                    // 3) 最保險：把所有可捲動的主要區塊都拉回頂端
+                    doc.querySelectorAll('section, main, div').forEach((el) => {
+                        try {
+                            if (el.scrollHeight > el.clientHeight) {
+                                el.scrollTop = 0;
+                            }
+                        } catch (e) {}
+                    });
+
                 } catch (e) {}
-            };
-            scrollTop();
-            setTimeout(scrollTop, 100);
-            setTimeout(scrollTop, 300);
-            setTimeout(scrollTop, 600);
+            }
+
+            forceScrollToTop();
+            setTimeout(forceScrollToTop, 50);
+            setTimeout(forceScrollToTop, 150);
+            setTimeout(forceScrollToTop, 300);
+            setTimeout(forceScrollToTop, 600);
+            setTimeout(forceScrollToTop, 1000);
+            setTimeout(forceScrollToTop, 1500);
             </script>
             """,
             height=0,
