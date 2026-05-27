@@ -1083,14 +1083,15 @@ QUESTIONNAIRE_CSS = """
 """
 
 
-def likert(label, key):
+def likert(item_no, label, key):
+    clean_label = label.rstrip("。")
     st.markdown(
-        f'<div class="q-item-label">· {label}</div>'
+        f'<div class="q-item-label">題項 {item_no}｜{clean_label}</div>'
         f'<div class="likert-labels"><span>← 非常不同意</span><span>非常同意 →</span></div>',
         unsafe_allow_html=True,
     )
     choice = st.radio(
-        label,
+        clean_label,
         LIKERT_OPTIONS,
         index=None,
         horizontal=True,
@@ -1138,11 +1139,11 @@ def render_stage_questionnaire():
         # ══════════════════════════════════════
 
         with st.container():
-            wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{si}_wl1")
+            wl1 = likert(1, "我覺得此標註流程需要花費較多心力", f"q_{si}_wl1")
 
-            wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{si}_wl2")
+            wl2 = likert(2, "我在使用此流程時需要反覆思考才能完成標註", f"q_{si}_wl2")
 
-            wl3 = likert("我覺得此流程的判斷負擔較高。", f"q_{si}_wl3")
+            wl3 = likert(3, "我覺得此流程的判斷負擔較高", f"q_{si}_wl3")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1151,11 +1152,11 @@ def render_stage_questionnaire():
         # ══════════════════════════════════════
 
         with st.container():
-            cf1 = likert("我對自己最後選擇的情緒結果有信心。", f"q_{si}_cf1")
+            cf1 = likert(4, "我對自己最後選擇的情緒結果有信心", f"q_{si}_cf1")
 
-            cf2 = likert("我認為自己的標註結果有足夠依據。", f"q_{si}_cf2")
+            cf2 = likert(5, "我認為自己的標註結果有足夠依據", f"q_{si}_cf2")
 
-            cf3 = likert("我能根據照片中的特徵做出合理判斷。", f"q_{si}_cf3")
+            cf3 = likert(6, "我能根據照片中的特徵做出合理判斷", f"q_{si}_cf3")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1164,11 +1165,11 @@ def render_stage_questionnaire():
         # ══════════════════════════════════════
 
         with st.container():
-            clarity = likert("我能清楚理解此標註流程的操作順序。", f"q_{si}_clarity")
+            clarity = likert(7, "我能清楚理解此標註流程的操作順序", f"q_{si}_clarity")
 
-            usefulness = likert("我認為此流程有助於我判斷家貓情緒。", f"q_{si}_usefulness")
+            usefulness = likert(8, "我認為此流程有助於我判斷家貓情緒", f"q_{si}_usefulness")
 
-            intention = likert("若未來需要標註家貓情緒，我願意使用此流程。", f"q_{si}_intention")
+            intention = likert(9, "若未來需要標註家貓情緒，我願意使用此流程", f"q_{si}_intention")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
