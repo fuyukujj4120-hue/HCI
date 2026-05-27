@@ -8,7 +8,7 @@ import streamlit as st
 APP_TITLE = "HCI 實驗分組抽籤系統"
 
 # 請貼上 Google Apps Script 部署後的 /exec 網址
-ASSIGNMENT_WEBHOOK_URL = "請貼上你的 Apps Script Web App /exec URL"
+ASSIGNMENT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxvacTvKldHZhZwYElBHi9F8KzTM3OFEhJy1r5ZaGVDa48a7jOHBfVL2cI3B1VtTYZA/exec"
 
 ASSIGNMENT_SECRET = "hci_group_assignment_secret"
 
