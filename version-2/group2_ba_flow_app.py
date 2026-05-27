@@ -1022,20 +1022,26 @@ QUESTIONNAIRE_CSS = """
 }
 
 .q-item-label {
+    font-family: 'Noto Serif TC', serif;
     font-size: 18px;
     color: #3b2e1e;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     line-height: 1.5;
 }
 
-/* 問卷 Likert 選項置中 */
+/* 問卷 Likert 選項：與題目同字體，並置中 */
+div[data-testid="stRadio"] {
+    width: 100% !important;
+}
+
 div[data-testid="stRadio"] div[role="radiogroup"] {
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 28px !important;
+    gap: 30px !important;
     width: 100% !important;
+    margin: 0 auto !important;
 }
 
 div[data-testid="stRadio"] div[role="radiogroup"] label {
@@ -1046,7 +1052,9 @@ div[data-testid="stRadio"] div[role="radiogroup"] label {
 }
 
 div[data-testid="stRadio"] div[role="radiogroup"] label p {
+    font-family: 'Noto Serif TC', serif !important;
     font-size: 18px !important;
+    font-weight: 600 !important;
     margin: 0 !important;
     white-space: nowrap !important;
 }
@@ -1100,14 +1108,18 @@ def likert(item_no, label, key):
         f'<div class="q-item-label">Q{item_no}: {clean_label}</div>',
         unsafe_allow_html=True,
     )
-    choice = st.radio(
-        clean_label,
-        LIKERT_OPTIONS,
-        index=None,
-        horizontal=True,
-        key=key,
-        label_visibility="collapsed",
-    )
+
+    # 用欄位把選項固定置中，避免 Streamlit radio 自動靠左
+    left, center, right = st.columns([0.45, 2.1, 0.45])
+    with center:
+        choice = st.radio(
+            clean_label,
+            LIKERT_OPTIONS,
+            index=None,
+            horizontal=True,
+            key=key,
+            label_visibility="collapsed",
+        )
     return LIKERT_SCORE_MAP.get(choice) if choice is not None else None
 
 
