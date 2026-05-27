@@ -10,6 +10,8 @@ import streamlit.components.v1 as components
 APP_PAGE_TITLE = "🐱 家貓情緒標註系統｜第 2 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
 GROUP_ID = "2"
+BASE_DIR = Path(__file__).resolve().parent
+IMAGE_DIR = BASE_DIR / "images"
 
 SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vLQ/exec"
 SHEET_SECRET = "hci_cat_annotation_secret"
@@ -50,27 +52,27 @@ EMOTION_SCHEMA = {
     "害怕": {
         "icon": "😿",
         "definition": "由立即感知到的危險或危險的威脅引起的，表現為警惕和試圖撤退或逃跑。",
-        "image": Path("images/fear.png"),
+        "image": IMAGE_DIR / "fear.png",
     },
     "憤怒": {
         "icon": "😾",
         "definition": "由執行行動/實現目標的願望受挫或資源競爭引起，表現為攻擊性或攻擊威脅。",
-        "image": Path("images/anger.png"),
+        "image": IMAGE_DIR / "anger.png",
     },
     "歡樂/玩耍": {
         "icon": "😺",
         "definition": "表現為非功能性行為，包括運動遊戲、社交遊戲或物件遊戲。",
-        "image": Path("images/joy.png"),
+        "image": IMAGE_DIR / "joy.png",
     },
     "滿意": {
         "icon": "😽",
         "definition": "由需求和願望得到滿足而產生的正向情緒狀態，表現為休息、平靜和親和。",
-        "image": Path("images/contentment.png"),
+        "image": IMAGE_DIR / "contentment.png",
     },
     "好奇": {
         "icon": "🐾",
         "definition": "由新奇或顯著刺激引起，表現為注意、定向或探索行為。",
-        "image": Path("images/interest.png"),
+        "image": IMAGE_DIR / "interest.png",
     },
     "中性": {
         "icon": "➖",
@@ -509,7 +511,17 @@ def do_scroll_to_top_if_needed():
         components.html(
             """
             <script>
-            window.parent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+            const scrollTop = () => {
+                try {
+                    window.parent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                    window.parent.document.documentElement.scrollTop = 0;
+                    window.parent.document.body.scrollTop = 0;
+                } catch (e) {}
+            };
+            scrollTop();
+            setTimeout(scrollTop, 100);
+            setTimeout(scrollTop, 300);
+            setTimeout(scrollTop, 600);
             </script>
             """,
             height=0,
@@ -571,9 +583,13 @@ DATA_COLUMNS = [
     "confidence",
     "annotation_time",
     "emotion_changed",
-    "workload_score",
+    "workload_q1",
+    "workload_q2",
+    "workload_q3",
+    "confidence_q1",
+    "confidence_q2",
+    "confidence_q3",
     "clarity_score",
-    "confidence_score",
     "usefulness_score",
     "intention_score",
     "open_feedback",
@@ -775,9 +791,13 @@ def build_base_record(stage, image, initial_emotion, selected_features, final_em
         "confidence": confidence,
         "annotation_time": annotation_time,
         "emotion_changed": emotion_changed,
-        "workload_score": "",
+        "workload_q1": "",
+        "workload_q2": "",
+        "workload_q3": "",
+        "confidence_q1": "",
+        "confidence_q2": "",
+        "confidence_q3": "",
         "clarity_score": "",
-        "confidence_score": "",
         "usefulness_score": "",
         "intention_score": "",
         "open_feedback": "",
@@ -868,11 +888,8 @@ def render_flow_b(stage, image, prefix):
         format_func=lambda x: f"{EMOTION_ICONS.get(x, '')} {x}",
     )
 
-    if initial_emotion and final_emotion:
-        if initial_emotion == final_emotion:
-            st.success("初步情緒與最終情緒相同，emotion_changed = False")
-        else:
-            st.warning("初步情緒與最終情緒不同，emotion_changed = True")
+    if initial_emotion and final_emotion and initial_emotion == final_emotion:
+        st.success("初步情緒與最終情緒相同，emotion_changed = False")
 
     uncertain_reason, uncertain_other_text = render_uncertain_reason(prefix, final_emotion or "")
 
@@ -1229,8 +1246,12 @@ def render_stage_questionnaire():
             stage_records = []
             for record in st.session_state.pending_stage_records:
                 record = dict(record)
-                record["workload_score"] = avg_or_none([wl1, wl2, wl3])
-                record["confidence_score"] = avg_or_none([cf1, cf2, cf3])
+                record["workload_q1"] = wl1
+                record["workload_q2"] = wl2
+                record["workload_q3"] = wl3
+                record["confidence_q1"] = cf1
+                record["confidence_q2"] = cf2
+                record["confidence_q3"] = cf3
                 record["clarity_score"] = clarity
                 record["usefulness_score"] = usefulness
                 record["intention_score"] = intention
