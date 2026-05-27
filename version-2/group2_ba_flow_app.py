@@ -12,20 +12,25 @@ OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
 GROUP_ID = "2"
 BASE_DIR = Path(__file__).resolve().parent
 IMAGE_DIR = BASE_DIR / "images"
+if not IMAGE_DIR.exists():
+    IMAGE_DIR = BASE_DIR.parent / "images"
+ANNOTATION_DIR = BASE_DIR / "annotations"
+if not ANNOTATION_DIR.exists():
+    ANNOTATION_DIR = BASE_DIR.parent / "annotations"
 
 SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vLQ/exec"
 SHEET_SECRET = "hci_cat_annotation_secret"
 
 IMAGE_SET_1 = [
-    {"image_id": "set1_preview_001", "path": ""},
-    {"image_id": "set1_preview_002", "path": ""},
-    {"image_id": "set1_preview_003", "path": ""},
+    {"image_id": "set1_001", "path": str(ANNOTATION_DIR / "video9_frame_0.jpg")},
+    {"image_id": "set1_002", "path": str(ANNOTATION_DIR / "video61_frame_5.jpg")},
+    {"image_id": "set1_003", "path": str(ANNOTATION_DIR / "video39_frame_14.jpg")},
 ]
 
 IMAGE_SET_2 = [
-    {"image_id": "set2_preview_001", "path": ""},
-    {"image_id": "set2_preview_002", "path": ""},
-    {"image_id": "set2_preview_003", "path": ""},
+    {"image_id": "set2_001", "path": str(ANNOTATION_DIR / "video30_frame_3.jpg")},
+    {"image_id": "set2_002", "path": str(ANNOTATION_DIR / "video10_frame_4.jpg")},
+    {"image_id": "set2_003", "path": str(ANNOTATION_DIR / "00000001_016.jpg")},
 ]
 
 STAGE_PLAN = [
@@ -1268,7 +1273,7 @@ def render_intro():
     )
     st.markdown('<div class="sub-title">一個網頁完成同一組受試者的兩個階段：A 與 B 都會做，但順序與照片組不同。</div>', unsafe_allow_html=True)
 
-    participant_id = st.text_input("受試者學號", value=st.session_state.participant_id)
+    participant_id = st.text_input("受試者學號／代號", value=st.session_state.participant_id)
     st.session_state.participant_id = participant_id.strip()
 
     st.markdown("### 本組實驗安排")
