@@ -1025,7 +1025,7 @@ QUESTIONNAIRE_CSS = """
     font-family: 'Noto Serif TC', serif;
     font-size: 18px;
     color: #3b2e1e;
-    font-weight: 700;
+    font-weight: 400;
     margin-bottom: 12px;
     line-height: 1.5;
 }
@@ -1044,6 +1044,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] {
     gap: 26px !important;
     width: 100% !important;
     margin: 8px auto 0 auto !important;
+    transform: translateX(3em) !important;
 }
 
 div[data-testid="stRadio"] div[role="radiogroup"] label {
@@ -1058,7 +1059,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] label {
 div[data-testid="stRadio"] div[role="radiogroup"] label p {
     font-family: 'Noto Serif TC', serif !important;
     font-size: 18px !important;
-    font-weight: 700 !important;
+    font-weight: 400 !important;
     margin: 0 !important;
     white-space: nowrap !important;
 }
