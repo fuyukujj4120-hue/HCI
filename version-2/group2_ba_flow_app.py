@@ -11,7 +11,7 @@ APP_PAGE_TITLE = "🐱 家貓情緒標註系統｜第 2 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
 GROUP_ID = "2"
 BASE_DIR = Path(__file__).resolve().parent
-IMAGE_DIR = BASE_DIR.parent / "images"
+IMAGE_DIR = BASE_DIR / "images"
 
 SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyMDrGh8WRV-ZyuEFY8uzmVASLSm9JEfZC4pqqGg398KFT8uKWBpNXaLO-9NGGqM17vLQ/exec"
 SHEET_SECRET = "hci_cat_annotation_secret"
@@ -1022,10 +1022,10 @@ QUESTIONNAIRE_CSS = """
 }
 
 .q-item-label {
-    font-size: 13.5px;
+    font-size: 18px;
     color: #3b2e1e;
-    font-weight: 500;
-    margin-bottom: 8px;
+    font-weight: 700;
+    margin-bottom: 10px;
     line-height: 1.5;
 }
 
@@ -1136,119 +1136,45 @@ def render_stage_questionnaire():
         # ══════════════════════════════════════
         # 區塊一：認知負荷
         # ══════════════════════════════════════
-        st.markdown(
-            """
-            <div class="q-section-card">
-              <div class="q-section-header">
-                <span class="q-section-icon">🧠</span>
-                <div>
-                  <div class="q-section-title">認知負荷</div>
-                  <div class="q-section-subtitle">評估此流程對您造成的心智負擔程度</div>
-                </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
         with st.container():
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             wl1 = likert("我覺得此標註流程需要花費較多心力。", f"q_{si}_wl1")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             wl2 = likert("我在使用此流程時需要反覆思考才能完成標註。", f"q_{si}_wl2")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             wl3 = likert("我覺得此流程的判斷負擔較高。", f"q_{si}_wl3")
-            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ══════════════════════════════════════
         # 區塊二：標註信心
         # ══════════════════════════════════════
-        st.markdown(
-            """
-            <div class="q-section-card">
-              <div class="q-section-header">
-                <span class="q-section-icon">🎯</span>
-                <div>
-                  <div class="q-section-title">標註信心</div>
-                  <div class="q-section-subtitle">評估您對自己標註結果的把握程度</div>
-                </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
         with st.container():
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             cf1 = likert("我對自己最後選擇的情緒結果有信心。", f"q_{si}_cf1")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             cf2 = likert("我認為自己的標註結果有足夠依據。", f"q_{si}_cf2")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             cf3 = likert("我能根據照片中的特徵做出合理判斷。", f"q_{si}_cf3")
-            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ══════════════════════════════════════
         # 區塊三：流程清楚度、有用性與使用意圖
         # ══════════════════════════════════════
-        st.markdown(
-            """
-            <div class="q-section-card">
-              <div class="q-section-header">
-                <span class="q-section-icon">✨</span>
-                <div>
-                  <div class="q-section-title">流程評估</div>
-                  <div class="q-section-subtitle">評估此流程的清楚程度、有用性與未來使用意願</div>
-                </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
         with st.container():
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             clarity = likert("我能清楚理解此標註流程的操作順序。", f"q_{si}_clarity")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             usefulness = likert("我認為此流程有助於我判斷家貓情緒。", f"q_{si}_usefulness")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown('<div class="q-item">', unsafe_allow_html=True)
             intention = likert("若未來需要標註家貓情緒，我願意使用此流程。", f"q_{si}_intention")
-            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # ══════════════════════════════════════
         # 區塊四：開放式回饋
         # ══════════════════════════════════════
-        st.markdown(
-            """
-            <div class="q-feedback-card">
-              <div class="q-section-header">
-                <span class="q-section-icon">💬</span>
-                <div>
-                  <div class="q-section-title">開放式回饋</div>
-                  <div class="q-section-subtitle">您的意見將幫助我們改善標註流程</div>
-                </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
         open_feedback = st.text_area(
             "請說明此流程的使用感受、判斷困難或改進建議（選填）",
