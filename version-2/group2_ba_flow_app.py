@@ -101,39 +101,43 @@ EMOTION_ICONS = {
 
 FEATURE_OPTIONS = {
     "眼睛": [
+        "睜大",
+        "半睜／放鬆",
+        "緊閉",
         "瞳孔放大",
-        "眼睛半閉",
-        "直視或凝視",
-        "目光集中",
-        "眼睛狀態不明顯",
-        "無法觀察",
+        "直視",
+        "避免眼神接觸",
+        "無法辨識",
         "其他",
     ],
     "耳朵": [
-        "耳朵後壓",
-        "耳朵側壓",
-        "耳朵自然",
-        "耳朵朝向刺激來源",
-        "耳朵狀態不明顯",
-        "無法觀察",
+        "直立",
+        "朝向刺激物",
+        "側向",
+        "壓平",
+        "無法辨識",
         "其他",
     ],
     "尾巴": [
-        "尾巴快速擺動",
-        "尾巴放鬆",
-        "尾巴夾起或壓低",
-        "尾巴豎起或水平",
-        "尾巴狀態不明顯",
-        "無法觀察",
+        "豎起",
+        "水平",
+        "放鬆",
+        "夾起",
+        "壓低僵硬",
+        "快速甩動",
+        "無法辨識",
         "其他",
     ],
-    "身體姿勢": [
-        "身體壓低",
-        "身體緊繃",
-        "姿勢放鬆",
-        "身體前傾或探索姿勢",
-        "整體狀態平穩",
-        "無法觀察",
+    "身體／姿勢": [
+        "放鬆",
+        "緊繃",
+        "壓低",
+        "前傾",
+        "拱背",
+        "炸毛",
+        "發抖／僵硬",
+        "姿勢變化頻繁",
+        "無法辨識",
         "其他",
     ],
 }
@@ -1340,8 +1344,7 @@ def render_task():
 
 
 def render_done():
-    st.success("此組兩個階段皆已完成。")
-
+    # ── 自動嘗試一次雲端同步 ──
     if not st.session_state.get("cloud_sync_attempted", False):
         st.session_state["cloud_sync_attempted"] = True
         try:
@@ -1352,42 +1355,235 @@ def render_done():
 
     msg = st.session_state.get("last_save_message", "")
     pending_count = len(st.session_state.get("pending_cloud_rows", []))
+    synced = pending_count == 0
 
-    st.markdown("### 雲端同步狀態")
-    if pending_count == 0:
-        if msg:
-            st.success(f"☁️ {msg}")
-        else:
-            st.success("☁️ Google Sheet 已同步完成。")
-    else:
-        st.warning(f"第一次 Google Sheet 同步未成功，尚有 {pending_count} 筆資料未上傳。")
-        if msg:
-            st.error(msg)
+    st.markdown(
+        """
+        <style>
+        .done-hero {
+            text-align: center;
+            padding: 40px 20px 28px 20px;
+            margin-bottom: 28px;
+        }
+        .done-hero-icon {
+            font-size: 56px;
+            line-height: 1;
+            margin-bottom: 14px;
+            animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        @keyframes pop-in {
+            0%   { transform: scale(0.4); opacity: 0; }
+            100% { transform: scale(1);   opacity: 1; }
+        }
+        .done-hero-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a1208;
+            letter-spacing: 0.04em;
+            margin-bottom: 8px;
+        }
+        .done-hero-sub {
+            font-size: 14px;
+            color: #7a6650;
+            letter-spacing: 0.02em;
+            line-height: 1.7;
+        }
+        /* 階段摘要徽章 */
+        .stage-badges {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin: 18px 0 0 0;
+        }
+        .stage-badge {
+            background: linear-gradient(135deg, #fffdf5 0%, #fff8e8 100%);
+            border: 1.5px solid #c9a96e;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8c5f20;
+            letter-spacing: 0.03em;
+        }
+        /* 狀態卡片 */
+        .done-card {
+            background: #fffdf8;
+            border: 1px solid #e0d4c0;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(180,140,80,0.07);
+        }
+        .done-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ede3d1;
+        }
+        .done-card-icon { font-size: 18px; }
+        .done-card-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: #4a3520;
+        }
+        /* 同步成功 */
+        .sync-ok {
+            background: linear-gradient(135deg, #f0faf0 0%, #e8f5e8 100%);
+            border: 1px solid #a8d8a8;
+            border-left: 4px solid #5a9a5a;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 13.5px;
+            color: #2d6a2d;
+            font-weight: 500;
+        }
+        /* 同步失敗 */
+        .sync-fail {
+            background: #fffbf0;
+            border: 1px solid #e8c76d;
+            border-left: 4px solid #c9880a;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 13.5px;
+            color: #5a4000;
+        }
+        /* 分隔線裝飾 */
+        .done-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0;
+            color: #c9a96e;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+        }
+        .done-divider::before,
+        .done-divider::after {
+            content: '';
+            flex: 1;
+            border-top: 1px solid #e0d4c0;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    if st.button("☁️ 上傳雲端", type="primary", disabled=(pending_count == 0)):
-        try:
-            ok, msg2 = sync_to_cloud()
-            st.session_state["last_save_message"] = msg2
-            st.rerun()
-        except Exception as e:
-            st.session_state["last_save_message"] = f"Google Sheet 重新同步失敗：{e}"
-            st.rerun()
+    left, center, right = st.columns([1, 2.4, 1])
+    with center:
 
-    st.markdown("### 匯出資料")
-    if OUTPUT_CSV.exists():
-        st.download_button(
-            "📄 下載 CSV",
-            OUTPUT_CSV.read_bytes(),
-            file_name=OUTPUT_CSV.name,
-            mime="text/csv",
-            type="primary",
+        # ── Hero 區：完成大標 ──
+        stage_badges_html = "".join(
+            f'<span class="stage-badge">✓ {s["stage_name"]}｜版本 {s["flow_type"]}</span>'
+            for s in get_stage_plan()
         )
-        st.caption(f"輸出檔案：{OUTPUT_CSV.name}")
+        st.markdown(
+            f"""
+            <div class="done-hero">
+                <div class="done-hero-icon">🎉</div>
+                <div class="done-hero-title">實驗全部完成！</div>
+                <div class="done-hero-sub">
+                    感謝您完成本組兩個階段的家貓情緒標註實驗<br>
+                    請確認資料已同步至雲端，並通知實驗人員。
+                </div>
+                <div class="stage-badges">{stage_badges_html}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    if st.button("回首頁重新開始"):
-        reset_all()
-        request_scroll_to_top()
-        st.rerun()
+        # ── 雲端同步狀態卡 ──
+        st.markdown(
+            """
+            <div class="done-card">
+              <div class="done-card-header">
+                <span class="done-card-icon">☁️</span>
+                <span class="done-card-title">雲端同步狀態</span>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if synced:
+            st.markdown(
+                f'<div class="sync-ok">✅ Google Sheet 同步完成！{msg}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<div class="sync-fail">⚠️ 尚有 {pending_count} 筆資料未上傳至 Google Sheet，請點擊下方按鈕重試。'
+                + (f'<br><span style="font-size:12px;opacity:0.8;">{msg}</span>' if msg else "")
+                + "</div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("☁️ 重新上傳至 Google Sheet", type="primary", use_container_width=True):
+                try:
+                    ok, msg2 = sync_to_cloud()
+                    st.session_state["last_save_message"] = msg2
+                    st.rerun()
+                except Exception as e:
+                    st.session_state["last_save_message"] = f"重新同步失敗：{e}"
+                    st.rerun()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ── 匯出資料卡 ──
+        st.markdown(
+            """
+            <div class="done-card">
+              <div class="done-card-header">
+                <span class="done-card-icon">📄</span>
+                <span class="done-card-title">下載標註資料</span>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if OUTPUT_CSV.exists():
+            st.markdown(
+                f'<div style="font-size:13px;color:#7a6650;margin-bottom:10px;">'
+                f'資料已儲存於本機：<code style="background:#f0e9db;padding:2px 6px;border-radius:4px;font-size:12px;">'
+                f'{OUTPUT_CSV.name}</code></div>',
+                unsafe_allow_html=True,
+            )
+            st.download_button(
+                "📥 下載 CSV 備份",
+                OUTPUT_CSV.read_bytes(),
+                file_name=OUTPUT_CSV.name,
+                mime="text/csv",
+                use_container_width=True,
+            )
+        else:
+            st.markdown(
+                '<div style="font-size:13px;color:#9e8060;">目前尚無本機 CSV 檔案。</div>',
+                unsafe_allow_html=True,
+            )
+
+        # ── 分隔 ──
+        st.markdown(
+            '<div class="done-divider">· · ·</div>',
+            unsafe_allow_html=True,
+        )
+
+        # ── 重新開始按鈕 ──
+        st.markdown(
+            '<div style="text-align:center;font-size:13px;color:#9e8060;margin-bottom:10px;">'
+            '若需要重新填寫，請點擊下方按鈕。',
+            unsafe_allow_html=True,
+        )
+        if st.button("↩ 回首頁重新開始", use_container_width=True):
+            reset_all()
+            request_scroll_to_top()
+            st.rerun()
+
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
 
 def main():
@@ -1405,4 +1601,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
