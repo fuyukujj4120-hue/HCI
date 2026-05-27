@@ -1030,31 +1030,35 @@ QUESTIONNAIRE_CSS = """
     line-height: 1.5;
 }
 
-/* 問卷 Likert 選項：與題目同字體，並置中 */
+/* 問卷 Likert 選項：單行置中，且和題目同字體 */
 div[data-testid="stRadio"] {
     width: 100% !important;
 }
 
 div[data-testid="stRadio"] div[role="radiogroup"] {
     display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 30px !important;
+    gap: 26px !important;
     width: 100% !important;
-    margin: 0 auto !important;
+    margin: 8px auto 0 auto !important;
 }
 
 div[data-testid="stRadio"] div[role="radiogroup"] label {
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     margin: 0 !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
 }
 
 div[data-testid="stRadio"] div[role="radiogroup"] label p {
     font-family: 'Noto Serif TC', serif !important;
     font-size: 18px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     margin: 0 !important;
     white-space: nowrap !important;
 }
@@ -1109,17 +1113,14 @@ def likert(item_no, label, key):
         unsafe_allow_html=True,
     )
 
-    # 用欄位把選項固定置中，避免 Streamlit radio 自動靠左
-    left, center, right = st.columns([0.45, 2.1, 0.45])
-    with center:
-        choice = st.radio(
-            clean_label,
-            LIKERT_OPTIONS,
-            index=None,
-            horizontal=True,
-            key=key,
-            label_visibility="collapsed",
-        )
+    choice = st.radio(
+        clean_label,
+        LIKERT_OPTIONS,
+        index=None,
+        horizontal=True,
+        key=key,
+        label_visibility="collapsed",
+    )
     return LIKERT_SCORE_MAP.get(choice) if choice is not None else None
 
 
