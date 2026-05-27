@@ -1029,15 +1029,26 @@ QUESTIONNAIRE_CSS = """
     line-height: 1.5;
 }
 
-/* Likert 量表標籤列 */
-.likert-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: #9e8060;
-    margin-top: -4px;
-    margin-bottom: 2px;
-    padding: 0 4px;
+/* 問卷 Likert 選項置中 */
+div[data-testid="stRadio"] div[role="radiogroup"] {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 28px !important;
+    width: 100% !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+}
+
+div[data-testid="stRadio"] div[role="radiogroup"] label p {
+    font-size: 18px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
 }
 
 /* 完成度提示 */
@@ -1086,8 +1097,7 @@ QUESTIONNAIRE_CSS = """
 def likert(item_no, label, key):
     clean_label = label.rstrip("。")
     st.markdown(
-        f'<div class="q-item-label">題項 {item_no}｜{clean_label}</div>'
-        f'<div class="likert-labels"><span>← 非常不同意</span><span>非常同意 →</span></div>',
+        f'<div class="q-item-label">Q{item_no}: {clean_label}</div>',
         unsafe_allow_html=True,
     )
     choice = st.radio(
