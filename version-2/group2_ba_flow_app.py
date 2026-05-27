@@ -7,7 +7,7 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
-APP_PAGE_TITLE = "家貓情緒標註系統｜第 2 組"
+APP_PAGE_TITLE = "🐱 家貓情緒標註系統｜第 2 組"
 OUTPUT_CSV = Path("hci_cat_annotation_group2.csv")
 GROUP_ID = "2"
 
@@ -45,31 +45,46 @@ STAGE_PLAN = [
     },
 ]
 
-st.set_page_config(page_title=APP_PAGE_TITLE, layout="wide")
+# ── 情緒定義（含圖片路徑）──
+EMOTION_SCHEMA = {
+    "害怕": {
+        "icon": "😿",
+        "definition": "由立即感知到的危險或危險的威脅引起的，表現為警惕和試圖撤退或逃跑。",
+        "image": Path("images/fear.png"),
+    },
+    "憤怒/狂怒": {
+        "icon": "😾",
+        "definition": "由執行行動/實現目標的願望受挫或資源競爭引起，表現為攻擊性或攻擊威脅。",
+        "image": Path("images/anger.png"),
+    },
+    "歡樂/玩耍": {
+        "icon": "😺",
+        "definition": "表現為非功能性行為，包括運動遊戲、社交遊戲或物件遊戲。",
+        "image": Path("images/joy.png"),
+    },
+    "滿意": {
+        "icon": "😽",
+        "definition": "由需求和願望得到滿足而產生的正向情緒狀態，表現為休息、平靜和親和。",
+        "image": Path("images/contentment.png"),
+    },
+    "好奇": {
+        "icon": "🐾",
+        "definition": "由新奇或顯著刺激引起，表現為注意、定向或探索行為。",
+        "image": Path("images/interest.png"),
+    },
+    "生氣": {
+        "icon": "😤",
+        "definition": "因不滿或受挫而產生的情緒反應，可能伴隨輕微的攻擊或防禦姿態。",
+        "image": None,
+    },
+    "中性": {
+        "icon": "➖",
+        "definition": "不明顯屬於特定情緒，偏中性、休息或日常活動的狀態。",
+        "image": None,
+    },
+}
 
-DATA_COLUMNS = [
-    "group_id",
-    "stage_name",
-    "photo_set_name",
-    "participant_id",
-    "flow_type",
-    "image_id",
-    "initial_emotion",
-    "selected_features",
-    "final_emotion",
-    "uncertain_reason",
-    "uncertain_other_text",
-    "confidence",
-    "annotation_time",
-    "emotion_changed",
-    "workload_score",
-    "clarity_score",
-    "confidence_score",
-    "usefulness_score",
-    "intention_score",
-    "open_feedback",
-]
-
+# 對應到 EMOTION_OPTIONS 的情緒定義查詢（做彈性映射）
 EMOTION_OPTIONS = [
     "害怕",
     "生氣",
@@ -78,6 +93,17 @@ EMOTION_OPTIONS = [
     "中性",
     "其他／無法判斷",
 ]
+
+EMOTION_ICONS = {
+    "害怕": "😿",
+    "生氣": "😾",
+    "滿意": "😽",
+    "好奇": "🐾",
+    "中性": "➖",
+    "其他／無法判斷": "❓",
+    "憤怒/狂怒": "😾",
+    "歡樂/玩耍": "😺",
+}
 
 FEATURE_OPTIONS = {
     "眼睛": [
@@ -125,6 +151,8 @@ UNCERTAIN_REASONS = [
     "超出現有分類",
     "其他",
 ]
+
+st.set_page_config(page_title=APP_PAGE_TITLE, layout="wide")
 
 st.markdown(
     """
@@ -255,6 +283,35 @@ st.markdown(
         letter-spacing: 0.04em;
     }
 
+    /* ── Emotion definition card (sidebar) ── */
+    .emotion-def-card {
+        background: #fffdf8;
+        border: 1px solid #e0d4c0;
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: #3b2e1e;
+        line-height: 1.6;
+    }
+
+    .emotion-def-card .emotion-icon {
+        font-size: 22px;
+        margin-right: 6px;
+    }
+
+    .emotion-def-card .emotion-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #4a3520;
+    }
+
+    .emotion-def-card .emotion-def-text {
+        margin-top: 6px;
+        color: #5c4433;
+        font-size: 12.5px;
+    }
+
     /* ── Sidebar ── */
     section[data-testid="stSidebar"] {
         width: 480px !important;
@@ -285,11 +342,6 @@ st.markdown(
 
     div[data-testid="stRadio"] > div {
         gap: 6px !important;
-    }
-
-    /* Radio button accent */
-    div[data-testid="stRadio"] input[type="radio"]:checked + div {
-        color: #b07d3a !important;
     }
 
     /* Primary button */
@@ -369,10 +421,48 @@ st.markdown(
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f0e9db; }
     ::-webkit-scrollbar-thumb { background: #c9a96e; border-radius: 3px; }
+
+    /* Sidebar emotion quick view buttons */
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button {
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        padding: 7px 10px !important;
+        transition: all 0.15s !important;
+    }
+
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
+        background: #f5ede0 !important;
+        border-color: #b07d3a !important;
+        color: #8c5f20 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+
+# ── Dialog：情緒定義快速查看（只顯示定義與圖片，不顯示特徵）──
+@st.dialog("情緒定義")
+def show_emotion_dialog(emotion_name: str):
+    item = EMOTION_SCHEMA.get(emotion_name)
+    if not item:
+        st.warning("找不到此情緒的定義。")
+        return
+    icon = item.get("icon", "")
+    st.markdown(
+        f'<div style="font-size:22px;font-weight:800;color:#4a3520;margin-bottom:8px;">'
+        f'{icon} {emotion_name}</div>',
+        unsafe_allow_html=True,
+    )
+    img_path = item.get("image")
+    if img_path and Path(img_path).exists():
+        st.image(str(img_path), use_container_width=True)
+    st.markdown(
+        f'<div style="background:#fffdf8;border:1px solid #e0d4c0;border-left:4px solid #c9a96e;'
+        f'border-radius:6px;padding:12px 16px;font-size:14px;color:#3b2e1e;line-height:1.7;margin-top:10px;">'
+        f'<b>定義：</b>{item["definition"]}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def get_stage_plan():
@@ -429,7 +519,6 @@ def do_scroll_to_top_if_needed():
 
 
 def clear_temp_csv_and_session_records():
-    """開始新的填答時清掉本機暫存 CSV 與雲端待上傳暫存，不影響 Google Sheet。"""
     try:
         if OUTPUT_CSV.exists():
             OUTPUT_CSV.unlink()
@@ -469,8 +558,31 @@ def append_records_to_google_sheet(records):
     return True, f"已同步 {data.get('inserted', len(records))} 筆到 Google Sheet。"
 
 
+DATA_COLUMNS = [
+    "group_id",
+    "stage_name",
+    "photo_set_name",
+    "participant_id",
+    "flow_type",
+    "image_id",
+    "initial_emotion",
+    "selected_features",
+    "final_emotion",
+    "uncertain_reason",
+    "uncertain_other_text",
+    "confidence",
+    "annotation_time",
+    "emotion_changed",
+    "workload_score",
+    "clarity_score",
+    "confidence_score",
+    "usefulness_score",
+    "intention_score",
+    "open_feedback",
+]
+
+
 def save_records(records):
-    """只把資料寫入本機 CSV，不做雲端同步（雲端同步統一在完成頁面處理）。"""
     rows = [{col: record.get(col, "") for col in DATA_COLUMNS} for record in records]
     df_new = pd.DataFrame(rows, columns=DATA_COLUMNS)
 
@@ -487,12 +599,10 @@ def save_records(records):
     df_all = df_all[DATA_COLUMNS]
     df_all.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
 
-    # 把這批 rows 加入「待上傳」清單，等全部完成後統一送雲端
     st.session_state.setdefault("pending_cloud_rows", []).extend(rows)
 
 
 def sync_to_cloud():
-    """把 pending_cloud_rows 全部送到 Google Sheet。成功後清空 pending，失敗保留以便重試。"""
     rows = st.session_state.get("pending_cloud_rows", [])
     if not rows:
         return True, "沒有需要同步的資料。"
@@ -504,9 +614,7 @@ def sync_to_cloud():
     return ok, msg
 
 
-
 def go_previous_page():
-    """返回上一頁，不刪除已儲存的 CSV。主要用於流程預覽與操作修正。"""
     page = st.session_state.get("page", "intro")
 
     if page == "task":
@@ -546,7 +654,6 @@ def render_back_button():
             go_previous_page()
 
 
-
 def render_placeholder(image_id):
     st.markdown(
         f'<div class="placeholder">圖片預覽區<br>目前尚未放入實際照片<br>image_id：{image_id}</div>',
@@ -569,6 +676,33 @@ def render_sidebar_image():
             st.image(path, use_container_width=True)
         else:
             render_placeholder(image["image_id"])
+
+
+def render_sidebar_emotion_quickview():
+    """Sidebar 底部：情緒定義快速查看（只顯示定義與圖片）"""
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown(
+            '<div style="font-size:13px;font-weight:700;color:#4a3520;margin-bottom:8px;">'
+            '📖 情緒定義快速查看</div>',
+            unsafe_allow_html=True,
+        )
+
+        # 只列出有定義的情緒（對應 EMOTION_OPTIONS 的子集）
+        quickview_emotions = [
+            ("害怕", "😿 害怕"),
+            ("憤怒/狂怒", "😾 憤怒/狂怒"),
+            ("歡樂/玩耍", "😺 歡樂/玩耍"),
+            ("滿意", "😽 滿意"),
+            ("好奇", "🐾 好奇"),
+        ]
+
+        col1, col2 = st.columns(2)
+        for i, (emotion_key, label) in enumerate(quickview_emotions):
+            target_col = col1 if i % 2 == 0 else col2
+            with target_col:
+                if st.button(label, key=f"sidebar_emotion_def_{emotion_key}", use_container_width=True):
+                    show_emotion_dialog(emotion_key)
 
 
 def build_selected_features(feature_values, feature_other_text):
@@ -676,6 +810,7 @@ def render_flow_a(stage, image, prefix):
         EMOTION_OPTIONS,
         index=None,
         key=f"{prefix}_final_emotion",
+        format_func=lambda x: f"{EMOTION_ICONS.get(x, '')} {x}",
     )
 
     uncertain_reason, uncertain_other_text = render_uncertain_reason(prefix, final_emotion or "")
@@ -720,6 +855,7 @@ def render_flow_b(stage, image, prefix):
         EMOTION_OPTIONS,
         index=None,
         key=f"{prefix}_initial_emotion",
+        format_func=lambda x: f"{EMOTION_ICONS.get(x, '')} {x}",
     )
 
     st.markdown("## Step 3：標註部位特徵")
@@ -731,6 +867,7 @@ def render_flow_b(stage, image, prefix):
         EMOTION_OPTIONS,
         index=None,
         key=f"{prefix}_final_emotion",
+        format_func=lambda x: f"{EMOTION_ICONS.get(x, '')} {x}",
     )
 
     if initial_emotion and final_emotion:
@@ -862,7 +999,10 @@ def render_stage_questionnaire():
 
 
 def render_intro():
-    st.markdown(f'<div class="main-title">{APP_PAGE_TITLE}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="main-title">🐱 {APP_PAGE_TITLE.replace("🐱 ", "")}</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown('<div class="sub-title">一個網頁完成同一組受試者的兩個階段：A 與 B 都會做，但順序與照片組不同。</div>', unsafe_allow_html=True)
 
     participant_id = st.text_input("受試者學號／代號", value=st.session_state.participant_id)
@@ -881,6 +1021,26 @@ def render_intro():
             unsafe_allow_html=True,
         )
 
+    # ── 情緒定義總覽（只顯示定義，不顯示特徵）──
+    st.markdown("### 情緒定義參考")
+    st.caption("點選下方情緒名稱可快速查看定義與圖片說明。")
+
+    for emo_name, emo_item in EMOTION_SCHEMA.items():
+        icon = emo_item.get("icon", "")
+        definition = emo_item.get("definition", "")
+        img_path = emo_item.get("image")
+        has_img = img_path and Path(img_path).exists()
+
+        with st.expander(f"{icon} {emo_name}", expanded=False):
+            if has_img:
+                st.image(str(img_path), use_container_width=True)
+            st.markdown(
+                f'<div style="background:#fffdf8;border:1px solid #e0d4c0;border-left:4px solid #c9a96e;'
+                f'border-radius:6px;padding:10px 14px;font-size:14px;color:#3b2e1e;line-height:1.7;">'
+                f'<b>定義：</b>{definition}</div>',
+                unsafe_allow_html=True,
+            )
+
     if st.button("開始本組實驗", type="primary", disabled=not bool(st.session_state.participant_id)):
         clear_temp_csv_and_session_records()
         st.session_state.page = "task"
@@ -894,6 +1054,8 @@ def render_intro():
 
 def render_task():
     render_sidebar_image()
+    render_sidebar_emotion_quickview()
+
     stage = current_stage()
     image = current_image()
 
@@ -903,7 +1065,10 @@ def render_task():
         st.rerun()
         return
 
-    st.markdown(f'<div class="main-title">{stage["stage_name"]}｜版本 {stage["flow_type"]}：{stage["flow_name"]}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="main-title">🐱 {stage["stage_name"]}｜版本 {stage["flow_type"]}：{stage["flow_name"]}</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         f'<div class="active-card">{stage["description"]}<br>目前照片：{st.session_state.image_index + 1} / {len(stage["images"])}｜image_id：{image["image_id"]}</div>',
         unsafe_allow_html=True,
@@ -923,8 +1088,6 @@ def render_task():
 def render_done():
     st.success("此組兩個階段皆已完成。")
 
-    # 進入 done 頁面時自動嘗試一次雲端同步（只跑一次）
-    # 若第一次失敗，會先顯示失敗訊息，並保留資料給下方「上傳雲端」按鈕重試。
     if not st.session_state.get("cloud_sync_attempted", False):
         st.session_state["cloud_sync_attempted"] = True
         try:
@@ -947,8 +1110,6 @@ def render_done():
         if msg:
             st.error(msg)
 
-    # 最後固定提供一個「上傳雲端」按鈕。
-    # 成功後 pending_cloud_rows 會清空，失敗訊息會在 rerun 後消失並改成成功訊息。
     if st.button("☁️ 上傳雲端", type="primary", disabled=(pending_count == 0)):
         try:
             ok, msg2 = sync_to_cloud()
@@ -990,7 +1151,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
