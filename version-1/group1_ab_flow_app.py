@@ -1017,13 +1017,14 @@ QUESTIONNAIRE_CSS = """
     margin-top: 1px;
 }
 
-/* ── 問題行 ── */
+/* ── 單題卡片：一題一框 ── */
 .q-item {
-    background: #faf7f2;
-    border: 1px solid #ede3d1;
-    border-radius: 7px;
-    padding: 12px 16px;
-    margin-bottom: 10px;
+    background: #fcfaf7;
+    border: 1.8px solid #d8cfc2;
+    border-radius: 14px;
+    padding: 18px 22px 16px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(180,140,80,0.05);
 }
 
 .q-item-label {
@@ -1114,6 +1115,8 @@ div[data-testid="stRadio"] div[role="radiogroup"] label p {
 
 def likert(item_no, label, key):
     clean_label = label.rstrip("。")
+
+    st.markdown('<div class="q-item">', unsafe_allow_html=True)
     st.markdown(
         f'<div class="q-item-label">Q{item_no}: {clean_label}</div>',
         unsafe_allow_html=True,
@@ -1127,6 +1130,8 @@ def likert(item_no, label, key):
         key=key,
         label_visibility="collapsed",
     )
+
+    st.markdown('</div>', unsafe_allow_html=True)
     return LIKERT_SCORE_MAP.get(choice) if choice is not None else None
 
 
