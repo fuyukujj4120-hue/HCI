@@ -85,6 +85,7 @@ EMOTION_SCHEMA = {
 EMOTION_OPTIONS = [
     "害怕",
     "憤怒",
+    "歡樂/玩耍",
     "滿意",
     "好奇",
     "中性",
@@ -456,13 +457,8 @@ def show_emotion_dialog(emotion_name: str):
     )
     img_path = item.get("image")
     if img_path and Path(img_path).exists():
-        st.image(str(img_path), use_container_width=True)
-    st.markdown(
-        f'<div style="background:#fffdf8;border:1px solid #e0d4c0;border-left:4px solid #c9a96e;'
-        f'border-radius:6px;padding:12px 16px;font-size:14px;color:#3b2e1e;line-height:1.7;margin-top:10px;">'
-        f'<b>定義：</b>{item["definition"]}</div>',
-        unsafe_allow_html=True,
-    )
+        st.image(str(img_path), width=260)
+    st.markdown(f"**定義：** {item['definition']}")
 
 
 def get_stage_plan():
@@ -1349,13 +1345,8 @@ def render_intro():
 
         with st.expander(f"{icon} {emo_name}", expanded=False):
             if has_img:
-                st.image(str(img_path), use_container_width=True)
-            st.markdown(
-                f'<div style="background:#fffdf8;border:1px solid #e0d4c0;border-left:4px solid #c9a96e;'
-                f'border-radius:6px;padding:10px 14px;font-size:14px;color:#3b2e1e;line-height:1.7;">'
-                f'<b>定義：</b>{definition}</div>',
-                unsafe_allow_html=True,
-            )
+                st.image(str(img_path), width=260)
+            st.markdown(f"**定義：** {definition}")
 
     if st.button("開始本組實驗", type="primary", disabled=not bool(st.session_state.participant_id)):
         clear_temp_csv_and_session_records()
@@ -1646,7 +1637,8 @@ def render_done():
 
 def main():
     init_state()
-    do_scroll_to_top_if_needed()
+    st.markdown('<div id="page_top_anchor"></div>', unsafe_allow_html=True)
+
     if st.session_state.page == "intro":
         render_intro()
     elif st.session_state.page == "task":
@@ -1655,6 +1647,8 @@ def main():
         render_stage_questionnaire()
     elif st.session_state.page == "done":
         render_done()
+
+    do_scroll_to_top_if_needed()
 
 
 if __name__ == "__main__":
