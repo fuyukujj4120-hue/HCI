@@ -441,6 +441,189 @@ st.markdown(
         border-color: #b07d3a !important;
         color: #8c5f20 !important;
     }
+
+    /* ── Mobile responsive fixes ── */
+    .mobile-photo-card {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        /* 主內容不要被寬版排版擠壓 */
+        .block-container {
+            padding: 0.9rem 0.85rem 2rem 0.85rem !important;
+            max-width: 100% !important;
+        }
+
+        .main-title {
+            font-size: 20px !important;
+            line-height: 1.45 !important;
+            letter-spacing: 0.02em !important;
+            word-break: break-word;
+        }
+
+        .sub-title {
+            font-size: 13px !important;
+            line-height: 1.6 !important;
+            margin-bottom: 16px !important;
+        }
+
+        h2 {
+            font-size: 17px !important;
+            line-height: 1.45 !important;
+            margin-top: 22px !important;
+        }
+
+        h3 {
+            font-size: 15px !important;
+            line-height: 1.45 !important;
+        }
+
+        h4 {
+            font-size: 14px !important;
+        }
+
+        .flow-card,
+        .active-card,
+        .warn-box,
+        .done-card {
+            padding: 12px 14px !important;
+            font-size: 13px !important;
+            line-height: 1.65 !important;
+            border-radius: 10px !important;
+        }
+
+        .placeholder {
+            height: 260px !important;
+            font-size: 14px !important;
+        }
+
+        /* 手機版：照片也顯示在主畫面，不需要受試者特別打開側邊欄 */
+        .mobile-photo-card {
+            display: block;
+            background: #fffdf8;
+            border: 1px solid #e0d4c0;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 12px 0 18px 0;
+            box-shadow: 0 2px 8px rgba(180,140,80,0.07);
+        }
+
+        .mobile-photo-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #4a3520;
+            margin-bottom: 8px;
+        }
+
+        .mobile-photo-caption {
+            font-size: 12px;
+            color: #7a6650;
+            margin-bottom: 8px;
+        }
+
+        .mobile-photo-card img {
+            max-height: 62vh !important;
+            width: 100% !important;
+            object-fit: contain !important;
+            border-radius: 10px !important;
+        }
+
+        /* 手機版 sidebar 不要固定 480px，避免畫面超出 */
+        section[data-testid="stSidebar"] {
+            width: min(92vw, 420px) !important;
+            min-width: 0 !important;
+        }
+
+        section[data-testid="stSidebar"] img {
+            max-height: 60vh !important;
+        }
+
+        /* 手機上 radio 改成直向卡片，避免 Likert 五個選項擠在一起 */
+        div[data-testid="stRadio"] div[role="radiogroup"] {
+            display: flex !important;
+            flex-direction: column !important;
+            flex-wrap: nowrap !important;
+            align-items: stretch !important;
+            justify-content: flex-start !important;
+            gap: 8px !important;
+            width: 100% !important;
+            margin: 8px 0 0 0 !important;
+            transform: none !important;
+        }
+
+        div[data-testid="stRadio"] div[role="radiogroup"] label {
+            width: 100% !important;
+            justify-content: flex-start !important;
+            background: #fffdf8 !important;
+            border: 1px solid #e0d4c0 !important;
+            border-radius: 10px !important;
+            padding: 10px 12px !important;
+            white-space: normal !important;
+        }
+
+        div[data-testid="stRadio"] div[role="radiogroup"] label p {
+            font-size: 15px !important;
+            line-height: 1.45 !important;
+            white-space: normal !important;
+        }
+
+        /* 問卷一題一框在手機版縮小 */
+        .q-item {
+            padding: 14px 14px 12px 14px !important;
+            margin-bottom: 14px !important;
+            border-radius: 12px !important;
+        }
+
+        .q-item-label {
+            font-size: 15px !important;
+            line-height: 1.5 !important;
+        }
+
+        .q-section-card,
+        .q-feedback-card {
+            padding: 14px !important;
+            border-radius: 12px !important;
+        }
+
+        .done-hero {
+            padding: 24px 10px 18px 10px !important;
+        }
+
+        .done-hero-icon {
+            font-size: 44px !important;
+        }
+
+        .done-hero-title {
+            font-size: 22px !important;
+        }
+
+        .done-hero-sub {
+            font-size: 13px !important;
+        }
+
+        .stage-badges {
+            gap: 8px !important;
+        }
+
+        .stage-badge {
+            font-size: 12px !important;
+            padding: 6px 12px !important;
+        }
+
+        /* 手機觸控按鈕加大 */
+        .stButton > button,
+        .stDownloadButton > button {
+            width: 100% !important;
+            min-height: 44px !important;
+            font-size: 14px !important;
+        }
+
+        .stTextInput input,
+        .stTextArea textarea {
+            font-size: 16px !important; /* 避免 iPhone 自動放大 */
+        }
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -729,6 +912,33 @@ def render_sidebar_image():
             st.image(path, use_container_width=True)
         else:
             render_placeholder(image["image_id"])
+
+
+def render_mobile_inline_image():
+    """手機版主畫面照片：避免受試者在手機上找不到側邊欄照片。"""
+    stage = current_stage()
+    image = current_image()
+    if image is None:
+        return
+
+    st.markdown(
+        f"""
+        <div class="mobile-photo-card">
+            <div class="mobile-photo-title">📷 家貓照片</div>
+            <div class="mobile-photo-caption">
+                {stage['stage_name']}｜版本 {stage['flow_type']}｜{stage['photo_set_name']}｜image_id：{image['image_id']}
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    path = image.get("path", "")
+    if path and Path(path).exists():
+        st.image(path, use_container_width=True)
+    else:
+        render_placeholder(image["image_id"])
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_sidebar_emotion_quickview():
@@ -1341,6 +1551,8 @@ def render_task():
         f'<div class="active-card">{stage["description"]}<br>目前照片：{st.session_state.image_index + 1} / {len(stage["images"])}｜image_id：{image["image_id"]}</div>',
         unsafe_allow_html=True,
     )
+
+    render_mobile_inline_image()
 
     if st.session_state.task_start_time is None:
         reset_task_timer()
